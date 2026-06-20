@@ -9,23 +9,23 @@ const BASE_EXERCISES = [
   {
     title: "Mobility Analysis",
     fullWidth: true,
-    image: "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=800&q=80",
+    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80",
     difficulty: "Full Body",
   },
   {
     title: "Squat",
     href: "/exercises/squat",
-    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=400&q=80",
+    image: "https://images.unsplash.com/photo-1567598508481-65985588e295?w=400&q=80",
     difficulty: "Beginner",
   },
   {
     title: "Push-up",
-    image: "https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=400&q=80",
+    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&q=80",
     difficulty: "Beginner",
   },
   {
     title: "Lunge",
-    image: "https://images.unsplash.com/photo-1597347316205-36f6c451fc5c?w=400&q=80",
+    image: "https://images.unsplash.com/photo-1434608519344-49d77a699e1d?w=400&q=80",
     difficulty: "Intermediate",
   },
   {
@@ -35,7 +35,7 @@ const BASE_EXERCISES = [
   },
   {
     title: "Plank",
-    image: "https://images.unsplash.com/photo-1566241142559-40e1dab266c6?w=400&q=80",
+    image: "https://images.unsplash.com/photo-1599058917212-d750089bc07e?w=400&q=80",
     difficulty: "Intermediate",
   },
 ];
@@ -43,17 +43,17 @@ const BASE_EXERCISES = [
 const UNLOCKED_EXERCISES = [
   {
     title: "Deadlift",
-    image: "https://images.unsplash.com/photo-1534368786749-b63e05c92717?w=400&q=80",
+    image: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=400&q=80",
     difficulty: "Advanced",
   },
   {
     title: "Hip Thrust",
-    image: "https://images.unsplash.com/photo-1579758629938-03d030f21aee?w=400&q=80",
+    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=400&q=80",
     difficulty: "Intermediate",
   },
   {
     title: "Bulgarian Split Squat",
-    image: "https://images.unsplash.com/photo-1434608519344-49d77a699e1d?w=400&q=80",
+    image: "https://images.unsplash.com/photo-1597347316205-36f6c451fc5c?w=400&q=80",
     difficulty: "Advanced",
   },
 ];

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { Camera, BarChart3, Sparkles } from "lucide-react";
 
@@ -22,14 +21,15 @@ export default function LoginPage() {
     <div className="flex flex-col h-full bg-background">
       <div className="bg-foreground text-white px-7 pt-16 pb-8 rounded-b-[2rem]">
         <div className="flex items-center gap-3 mb-6">
-          <Image src="/logo.png" alt="FormFirst" width={44} height={44} className="rounded-xl" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="FormFirst" className="w-11 h-11 object-contain" />
           <span className="text-[18px] font-bold tracking-tight">FormFirst</span>
         </div>
         <h1 className="text-[26px] font-bold tracking-tight leading-[1.2] mb-2">
-          Perfect your form<br />with AI coaching
+          Don&apos;t train<br />like a shrimp
         </h1>
         <p className="text-zinc-400 text-[14px] leading-relaxed">
-          Real-time pose analysis and instant feedback for every rep.
+          Real-time AI form analysis and instant feedback for every rep.
         </p>
 
         <div className="flex gap-2 mt-5">
