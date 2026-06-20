@@ -25,7 +25,7 @@ export const UP_THRESHOLD = 0.90;
 export const MIN_REP_INTERVAL_MS = 500;
 
 // Balance: shoulder-hip horizontal offset
-export const BALANCE_THRESHOLD = 0.06;
+export const BALANCE_THRESHOLD = 0.035;
 
 export const CONSECUTIVE_BALANCE_FOR_STOP = 2;
 
