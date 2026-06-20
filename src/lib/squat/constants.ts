@@ -11,30 +11,25 @@ export const LANDMARKS = {
 } as const;
 
 // --- Visibility ---
-export const MIN_LANDMARK_VISIBILITY = 0.6;
+export const MIN_LANDMARK_VISIBILITY = 0.5;
 
 // --- Calibration ---
-export const CALIBRATION_FRAMES = 45;
-export const CALIBRATION_STABILITY_THRESHOLD = 0.03;
+export const CALIBRATION_FRAMES = 30;
+export const CALIBRATION_STABILITY_THRESHOLD = 0.035;
 
 // --- Smoothing ---
-// Exponential moving average alpha (0-1, lower = more smoothing)
-export const SMOOTHING_ALPHA = 0.3;
+export const SMOOTHING_ALPHA = 0.4;
 
 // --- Depth thresholds ---
-// Ratio of current hip-knee delta to standing hip-knee delta
-// Lower = deeper squat
-export const DEPTH_SUFFICIENT_RATIO = 0.55;
-export const DEPTH_TOO_LOW_RATIO = 0.25;
+export const DEPTH_SUFFICIENT_RATIO = 0.6;
+export const DEPTH_TOO_LOW_RATIO = 0.2;
 
 // --- Rep counting hysteresis ---
-// Wide gap between descent and ascent thresholds prevents noise-triggered transitions
-export const DESCENT_THRESHOLD_RATIO = 0.65;
-export const ASCENT_THRESHOLD_RATIO = 0.90;
-// Minimum depth the user must reach (relative to standing) to count as a rep
-export const MIN_MOVEMENT_THRESHOLD = 0.25;
-// Minimum time (ms) between reps to prevent double-counting
-export const MIN_REP_INTERVAL_MS = 800;
+export const DESCENT_THRESHOLD_RATIO = 0.80;
+export const ASCENT_THRESHOLD_RATIO = 0.92;
+export const BOTTOM_THRESHOLD_RATIO = 0.65;
+export const MIN_MOVEMENT_THRESHOLD = 0.15;
+export const MIN_REP_INTERVAL_MS = 600;
 
 // --- Knee valgus ---
 export const VALGUS_RATIO_THRESHOLD = 0.7;

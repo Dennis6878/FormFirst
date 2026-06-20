@@ -22,7 +22,7 @@ export default function CameraView({ onEnd }: CameraViewProps) {
   const [stopDismissed, setStopDismissed] = useState(false);
   const { videoRef, isReady, error, start, stop } = useCamera();
   const { result, isLoading } = usePoseDetection(videoRef, isReady);
-  const { stage, repCount, feedbackMessages, shouldStop, phase, hasLiveError } = useSquatAnalysis(result);
+  const { stage, repCount, feedbackMessages, shouldStop, phase, hasLiveError, skeletonColor } = useSquatAnalysis(result);
 
   useEffect(() => {
     start();
@@ -75,7 +75,7 @@ export default function CameraView({ onEnd }: CameraViewProps) {
         width: vw,
         height: vh,
         ctx,
-        hasError: hasLiveError,
+        color: skeletonColor,
       });
     } else {
       ctx.clearRect(0, 0, vw, vh);
@@ -100,7 +100,7 @@ export default function CameraView({ onEnd }: CameraViewProps) {
         compCtx.fillStyle = "rgba(0,0,0,0.6)";
         const tw = compCtx.measureText(msg).width;
         compCtx.fillRect(vw / 2 - tw / 2 - 12, y - 18, tw + 24, 28);
-        compCtx.fillStyle = hasLiveError ? "#ef4444" : "#22c55e";
+        compCtx.fillStyle = skeletonColor === "red" ? "#ef4444" : skeletonColor === "green" ? "#22c55e" : "#3b82f6";
         compCtx.fillText(msg, vw / 2, y);
       });
     }

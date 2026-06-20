@@ -1,4 +1,5 @@
 import { POSE_CONNECTIONS, LANDMARKS } from "@/lib/squat/constants";
+import type { SkeletonColor } from "@/hooks/useSquatAnalysis";
 
 interface Landmark {
   x: number;
@@ -12,21 +13,38 @@ interface PoseOverlayProps {
   width: number;
   height: number;
   ctx: CanvasRenderingContext2D;
-  hasError: boolean;
+  color: SkeletonColor;
 }
 
 const KEY_LANDMARKS = new Set<number>(Object.values(LANDMARKS));
 
-export function drawPoseOverlay({ landmarks, width, height, ctx, hasError }: PoseOverlayProps) {
+const COLORS = {
+  blue: {
+    connection: "rgba(59, 130, 246, 0.7)",
+    dot: "rgba(147, 197, 253, 0.9)",
+    keyDot: "#93c5fd",
+    keyStroke: "rgba(59, 130, 246, 0.5)",
+  },
+  green: {
+    connection: "rgba(34, 197, 94, 0.8)",
+    dot: "rgba(134, 239, 172, 0.9)",
+    keyDot: "#86efac",
+    keyStroke: "rgba(34, 197, 94, 0.5)",
+  },
+  red: {
+    connection: "rgba(239, 68, 68, 0.8)",
+    dot: "rgba(252, 165, 165, 0.9)",
+    keyDot: "#fca5a5",
+    keyStroke: "rgba(239, 68, 68, 0.5)",
+  },
+};
+
+export function drawPoseOverlay({ landmarks, width, height, ctx, color }: PoseOverlayProps) {
   ctx.clearRect(0, 0, width, height);
 
-  // Green when form is good, red when there's an error
-  const connectionColor = hasError ? "rgba(239, 68, 68, 0.7)" : "rgba(34, 197, 94, 0.7)";
-  const dotColor = hasError ? "rgba(252, 165, 165, 0.9)" : "rgba(134, 239, 172, 0.9)";
-  const keyDotColor = hasError ? "#fca5a5" : "#86efac";
-  const keyDotStroke = hasError ? "rgba(239, 68, 68, 0.5)" : "rgba(34, 197, 94, 0.5)";
+  const c = COLORS[color];
 
-  ctx.strokeStyle = connectionColor;
+  ctx.strokeStyle = c.connection;
   ctx.lineWidth = 3;
   for (const [startIdx, endIdx] of POSE_CONNECTIONS) {
     const start = landmarks[startIdx];
@@ -50,11 +68,11 @@ export function drawPoseOverlay({ landmarks, width, height, ctx, hasError }: Pos
 
     ctx.beginPath();
     ctx.arc(x, y, isKey ? 6 : 3, 0, 2 * Math.PI);
-    ctx.fillStyle = isKey ? keyDotColor : dotColor;
+    ctx.fillStyle = isKey ? c.keyDot : c.dot;
     ctx.fill();
 
     if (isKey) {
-      ctx.strokeStyle = keyDotStroke;
+      ctx.strokeStyle = c.keyStroke;
       ctx.lineWidth = 2;
       ctx.stroke();
     }

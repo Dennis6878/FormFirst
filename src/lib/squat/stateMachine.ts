@@ -3,6 +3,7 @@ import {
   LANDMARKS,
   DESCENT_THRESHOLD_RATIO,
   ASCENT_THRESHOLD_RATIO,
+  BOTTOM_THRESHOLD_RATIO,
   MIN_MOVEMENT_THRESHOLD,
   MIN_REP_INTERVAL_MS,
   SMOOTHING_ALPHA,
@@ -27,8 +28,7 @@ export interface StateMachineState {
   framesSinceCalibration: number;
 }
 
-// Require N consecutive frames in the same direction before transitioning
-const CONFIRM_FRAMES = 3;
+const CONFIRM_FRAMES = 2;
 
 export function createInitialState(): StateMachineState {
   return {
@@ -89,8 +89,7 @@ export function transition(
     framesSinceCalibration: state.framesSinceCalibration + 1,
   };
 
-  // Ignore first 15 frames after calibration to let the user settle
-  if (newState.framesSinceCalibration < 15) {
+  if (newState.framesSinceCalibration < 10) {
     return { newState, repCompleted: false };
   }
 
@@ -115,11 +114,10 @@ export function transition(
       break;
 
     case SquatPhase.DESCENDING:
-      if (smoothed < DESCENT_THRESHOLD_RATIO * 0.8) {
+      if (smoothed < BOTTOM_THRESHOLD_RATIO) {
         newState.phase = SquatPhase.BOTTOM;
         confirmDownRef.current = 0;
       } else if (smoothed > ASCENT_THRESHOLD_RATIO) {
-        // Went back up without going deep enough — cancel
         confirmUpRef.current++;
         if (confirmUpRef.current >= CONFIRM_FRAMES) {
           newState.phase = SquatPhase.STANDING;
@@ -133,7 +131,7 @@ export function transition(
 
     case SquatPhase.BOTTOM:
       confirmDownRef.current = 0;
-      if (smoothed > DESCENT_THRESHOLD_RATIO) {
+      if (smoothed > BOTTOM_THRESHOLD_RATIO + 0.1) {
         confirmUpRef.current++;
         if (confirmUpRef.current >= CONFIRM_FRAMES) {
           newState.phase = SquatPhase.ASCENDING;
@@ -166,8 +164,7 @@ export function transition(
           newState.peakDepthRatio = 1;
           confirmUpRef.current = 0;
         }
-      } else if (smoothed < DESCENT_THRESHOLD_RATIO * 0.8) {
-        // Went back down — return to bottom
+      } else if (smoothed < BOTTOM_THRESHOLD_RATIO) {
         confirmUpRef.current = 0;
         newState.phase = SquatPhase.BOTTOM;
       } else {
