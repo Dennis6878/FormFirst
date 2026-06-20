@@ -36,12 +36,11 @@ export default function RootLayout({
               position="top-center"
               toastOptions={{
                 style: {
-                  background: "#ffffff",
-                  border: "1px solid #f1f5f9",
-                  color: "#0f172a",
-                  boxShadow: "0 4px 24px -4px rgba(0,0,0,0.08)",
-                  borderRadius: "16px",
-                  fontSize: "14px",
+                  background: "#18181b",
+                  border: "1px solid #27272a",
+                  color: "#fafafa",
+                  borderRadius: "12px",
+                  fontSize: "13px",
                 },
               }}
             />

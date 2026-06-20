@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkout } from "@/context/WorkoutContext";
+import { CheckCircle2, AlertTriangle, Sparkles, ArrowRight } from "lucide-react";
 
 export default function SummaryPage() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function SummaryPage() {
     }
   }
   const mostCommonMistake = Object.entries(errorCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  const score = totalReps > 0 ? Math.round((goodReps / totalReps) * 100) : 0;
 
   useEffect(() => {
     if (!mostCommonMistake || totalReps === 0) return;
@@ -43,109 +45,109 @@ export default function SummaryPage() {
 
   if (totalReps === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full px-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-surface flex items-center justify-center mb-4">
-          <span className="text-3xl">🏋️</span>
+      <div className="flex flex-col items-center justify-center h-full px-8 text-center bg-background">
+        <div className="w-14 h-14 rounded-full bg-surface border border-border flex items-center justify-center mb-4">
+          <span className="text-2xl">🏋️</span>
         </div>
-        <p className="text-foreground font-semibold mb-1">No reps recorded</p>
-        <p className="text-muted text-sm mb-6">Try again and make sure the camera can see your full body.</p>
-        <button onClick={handleDone} className="text-primary font-semibold text-sm">
+        <p className="text-foreground font-semibold text-[16px] mb-1">No reps recorded</p>
+        <p className="text-muted text-[13px] mb-6">Make sure the camera can see your full body.</p>
+        <button onClick={handleDone} className="h-10 px-6 rounded-lg bg-foreground text-white text-[13px] font-medium">
           Back to Exercises
         </button>
       </div>
     );
   }
 
-  const score = Math.round((goodReps / totalReps) * 100);
-
   return (
-    <div className="flex flex-col h-full px-5 pt-16 pb-6 bg-background">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/10 to-primary-light/10 flex items-center justify-center mx-auto mb-4">
-          <span className="text-4xl font-bold text-primary">{score}%</span>
-        </div>
-        <h1 className="text-[22px] font-bold text-foreground tracking-tight">Workout Complete</h1>
-        <p className="text-[13px] text-muted mt-1 capitalize">{currentExercise ?? "Exercise"} Session</p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-2.5 mb-6">
-        <div className="bg-surface rounded-2xl p-3.5 text-center">
-          <div className="text-[22px] font-bold text-foreground">{totalReps}</div>
-          <div className="text-[10px] text-muted uppercase tracking-wider mt-0.5 font-medium">Total</div>
-        </div>
-        <div className="bg-surface rounded-2xl p-3.5 text-center">
-          <div className="text-[22px] font-bold text-success">{goodReps}</div>
-          <div className="text-[10px] text-muted uppercase tracking-wider mt-0.5 font-medium">Good</div>
-        </div>
-        <div className="bg-surface rounded-2xl p-3.5 text-center">
-          <div className="text-[22px] font-bold text-warning">{totalReps - goodReps}</div>
-          <div className="text-[10px] text-muted uppercase tracking-wider mt-0.5 font-medium">Fix</div>
+    <div className="flex flex-col h-full bg-background">
+      {/* Header with score */}
+      <div className="bg-foreground text-white px-5 pt-16 pb-6 rounded-b-[2rem]">
+        <p className="text-zinc-400 text-[13px] mb-1 capitalize">{currentExercise} Session</p>
+        <h1 className="text-[24px] font-bold tracking-tight mb-5">Workout Complete</h1>
+        <div className="flex gap-2.5">
+          <div className="flex-1 bg-white/10 rounded-xl p-3 text-center">
+            <div className="text-[28px] font-bold leading-none">{totalReps}</div>
+            <div className="text-[10px] text-zinc-400 mt-1 font-medium">Total Reps</div>
+          </div>
+          <div className="flex-1 bg-white/10 rounded-xl p-3 text-center">
+            <div className="text-[28px] font-bold leading-none text-emerald-400">{goodReps}</div>
+            <div className="text-[10px] text-zinc-400 mt-1 font-medium">Good Form</div>
+          </div>
+          <div className="flex-1 bg-white/10 rounded-xl p-3 text-center">
+            <div className="text-[28px] font-bold leading-none">{score}%</div>
+            <div className="text-[10px] text-zinc-400 mt-1 font-medium">Score</div>
+          </div>
         </div>
       </div>
 
-      {/* Rep breakdown */}
-      <div className="mb-6">
-        <h2 className="text-[12px] font-semibold text-foreground uppercase tracking-wider mb-3">Rep Breakdown</h2>
-        <div className="bg-surface rounded-2xl p-4 max-h-40 overflow-y-auto">
-          <div className="space-y-2.5">
-            {repLogs.map((log) => (
-              <div key={log.repNumber} className="flex items-center gap-3">
-                <span className="text-[12px] text-muted w-10 flex-shrink-0 font-medium">#{log.repNumber}</span>
-                {log.errors.length === 0 ? (
-                  <span className="text-[11px] font-medium text-success bg-success/8 px-2.5 py-1 rounded-lg">
-                    Good form
-                  </span>
-                ) : (
-                  <div className="flex flex-wrap gap-1">
-                    {log.errors.map((err) => (
-                      <span key={err} className="text-[11px] font-medium text-warning bg-warning/8 px-2.5 py-1 rounded-lg">
-                        {err}
-                      </span>
-                    ))}
+      <div className="flex-1 overflow-y-auto px-5 pt-5 pb-4">
+        {/* Rep breakdown */}
+        <div className="mb-5">
+          <h2 className="text-[12px] font-semibold text-muted uppercase tracking-wider mb-2.5">Rep Breakdown</h2>
+          <div className="bg-surface border border-border rounded-xl p-3">
+            <div className="space-y-1.5">
+              {repLogs.map((log) => (
+                <div key={log.repNumber} className="flex items-center justify-between py-1">
+                  <div className="flex items-center gap-2.5">
+                    {log.errors.length === 0 ? (
+                      <CheckCircle2 className="w-4 h-4 text-success" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-warning" />
+                    )}
+                    <span className="text-[13px] font-medium text-foreground">Rep {log.repNumber}</span>
                   </div>
-                )}
-              </div>
-            ))}
+                  {log.errors.length === 0 ? (
+                    <span className="text-[11px] font-medium text-success">Good</span>
+                  ) : (
+                    <div className="flex gap-1">
+                      {log.errors.map((err) => (
+                        <span key={err} className="text-[10px] font-medium text-warning bg-orange-50 px-2 py-0.5 rounded-md">
+                          {err}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
+
+        {/* AI Feedback */}
+        {mostCommonMistake && (
+          <div className="mb-5">
+            <h2 className="text-[12px] font-semibold text-muted uppercase tracking-wider mb-2.5">AI Coaching</h2>
+            <div className="bg-surface border border-border rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center">
+                  <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+                </div>
+                <div>
+                  <div className="text-[12px] font-semibold text-foreground">Focus Area</div>
+                  <div className="text-[11px] text-muted">{mostCommonMistake}</div>
+                </div>
+              </div>
+              {isLoadingFeedback ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-3.5 h-3.5 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />
+                  <span className="text-[12px] text-muted">Generating feedback...</span>
+                </div>
+              ) : (
+                <p className="text-[13px] text-muted leading-relaxed">{aiFeedback}</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* AI Feedback */}
-      {mostCommonMistake && (
-        <div className="mb-6">
-          <h2 className="text-[12px] font-semibold text-foreground uppercase tracking-wider mb-3">AI Coaching</h2>
-          <div className="bg-gradient-to-br from-primary/[0.04] to-primary-light/[0.06] rounded-2xl p-4 border border-primary/10">
-            <div className="flex items-center gap-2 mb-2.5">
-              <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
-                <svg className="w-3.5 h-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                </svg>
-              </div>
-              <span className="text-[12px] font-semibold text-primary">
-                Focus: {mostCommonMistake}
-              </span>
-            </div>
-            {isLoadingFeedback ? (
-              <div className="flex items-center gap-2.5">
-                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                <span className="text-[12px] text-muted">Generating feedback...</span>
-              </div>
-            ) : (
-              <p className="text-[13px] text-slate-600 leading-relaxed">{aiFeedback}</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Done button */}
-      <div className="mt-auto">
+      {/* Done */}
+      <div className="flex-shrink-0 border-t border-border bg-background px-5 py-3.5">
         <button
           onClick={handleDone}
-          className="w-full h-[54px] rounded-2xl bg-gradient-to-r from-primary to-primary-light text-white font-semibold text-[15px] shadow-lg shadow-primary/25 transition-all active:scale-[0.98]"
+          className="w-full h-11 rounded-lg bg-foreground text-white font-medium text-[14px] hover:bg-foreground/90 transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
         >
           Done
+          <ArrowRight className="w-4 h-4" />
         </button>
       </div>
     </div>
