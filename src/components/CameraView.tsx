@@ -184,9 +184,9 @@ export default function CameraView({ onEnd, targetReps }: CameraViewProps) {
             <div className="w-14 h-14 rounded-full bg-red-500/15 flex items-center justify-center mx-auto mb-4">
               <AlertOctagon className="w-7 h-7 text-red-500" />
             </div>
-            <h3 className="text-white font-bold text-[18px] mb-1.5">Balance Issues Detected</h3>
+            <h3 className="text-white font-bold text-[18px] mb-1.5">Knee Position Issue</h3>
             <p className="text-zinc-400 text-[13px] leading-relaxed mb-5">
-              You&apos;ve been leaning to one side for multiple reps. Continuing may increase injury risk.
+              Your knees have been tracking too far outward for multiple reps. This can stress your joints.
             </p>
             <div className="flex flex-col gap-2">
               <button onClick={handleEnd} className="w-full h-11 rounded-xl bg-red-500 text-white font-semibold text-[14px] active:scale-[0.98]">

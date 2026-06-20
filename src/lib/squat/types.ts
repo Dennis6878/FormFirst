@@ -14,8 +14,6 @@ export interface SessionSummary {
 
 export interface CalibrationData {
   standingHipKneeDelta: number;
-  standingShoulderMidX: number;
-  standingHipMidX: number;
 }
 
 export enum AnalysisStage {

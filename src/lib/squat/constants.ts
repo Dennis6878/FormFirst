@@ -14,21 +14,17 @@ export const MIN_VISIBILITY = 0.45;
 export const CALIBRATION_FRAMES = 25;
 export const CALIBRATION_STABILITY = 0.04;
 
-// Depth ratio = current hip-knee distance / standing hip-knee distance
-// ~1.0 standing, drops toward 0 as you squat deeper
 export const DEPTH_GOOD_MIN = 0.30;
 export const DEPTH_GOOD_MAX = 0.65;
 
-// Rep counting
 export const DOWN_THRESHOLD = 0.85;
 export const UP_THRESHOLD = 0.90;
 export const MIN_REP_INTERVAL_MS = 500;
 
-// Balance: shoulder-hip horizontal offset (normalized 0–1)
-// Checked relative to calibrated standing offset to ignore natural lean
-export const BALANCE_THRESHOLD = 0.025;
+// Knee tracking: max horizontal distance a knee can be outside its ankle
+export const KNEE_OUT_THRESHOLD = 0.03;
 
-export const CONSECUTIVE_BALANCE_FOR_STOP = 2;
+export const CONSECUTIVE_CRITICAL_FOR_STOP = 2;
 
 export const POSE_CONNECTIONS: [number, number][] = [
   [11, 12], [11, 23], [12, 24], [23, 24],

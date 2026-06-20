@@ -10,7 +10,7 @@ import {
   MIN_VISIBILITY,
   DEPTH_GOOD_MIN,
   DEPTH_GOOD_MAX,
-  CONSECUTIVE_BALANCE_FOR_STOP,
+  CONSECUTIVE_CRITICAL_FOR_STOP,
 } from "@/lib/squat/constants";
 import { createInitialState, transition, type StateMachineState } from "@/lib/squat/stateMachine";
 import { analyzeFrame } from "@/lib/squat/formChecks";
@@ -43,8 +43,8 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
 
   const fsmRef = useRef<StateMachineState>(createInitialState());
   const calibFramesRef = useRef<Landmark[][]>([]);
-  const consecutiveBalanceRef = useRef(0);
-  const hadBalanceLossRef = useRef(false);
+  const consecutiveCriticalRef = useRef(0);
+  const hadKneesWideRef = useRef(false);
   const feedbackTimerRef = useRef(false);
 
   const calibrate = useCallback((landmarks: Landmark[]) => {
@@ -72,11 +72,7 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
     const delta = kneeY - hipY;
     if (delta < 0.01) { calibFramesRef.current = []; return; }
 
-    const data: CalibrationData = {
-      standingHipKneeDelta: delta,
-      standingShoulderMidX: (al[LANDMARKS.LEFT_SHOULDER].x + al[LANDMARKS.RIGHT_SHOULDER].x) / 2,
-      standingHipMidX: (al[LANDMARKS.LEFT_HIP].x + al[LANDMARKS.RIGHT_HIP].x) / 2,
-    };
+    const data: CalibrationData = { standingHipKneeDelta: delta };
 
     setCalibration(data);
     setCtxCalibration(data);
@@ -112,20 +108,15 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
     if (stage !== AnalysisStage.ACTIVE || !calibration) return;
     if (!landmarksOk(lm)) return;
 
-    const { depthRatio, isBalanceLoss } = analyzeFrame(lm, calibration);
+    const { depthRatio, isKneesTooWide } = analyzeFrame(lm, calibration);
     const { newState, repCompleted, minDepth } = transition(fsmRef.current, lm, calibration);
     fsmRef.current = newState;
 
-    // Track balance loss during the down phase of this rep
-    if (isBalanceLoss && newState.isDown) {
-      hadBalanceLossRef.current = true;
+    if (isKneesTooWide && newState.isDown) {
+      hadKneesWideRef.current = true;
     }
 
-    // Skeleton color:
-    // - Red: balance loss OR too deep (only while actually squatting)
-    // - Green: in good depth zone AND in down state
-    // - Blue: everything else (standing, descending before good zone, ascending)
-    if (newState.isDown && (isBalanceLoss || depthRatio < DEPTH_GOOD_MIN)) {
+    if (newState.isDown && (isKneesTooWide || depthRatio < DEPTH_GOOD_MIN)) {
       setSkeletonColor("red");
     } else if (newState.isDown && depthRatio >= DEPTH_GOOD_MIN && depthRatio <= DEPTH_GOOD_MAX) {
       setSkeletonColor("green");
@@ -133,18 +124,15 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
       setSkeletonColor("blue");
     }
 
-    // NO live feedback text between reps — feedback ONLY shown after rep completes
-    // (feedbackTimerRef controls this: true = showing post-rep feedback, false = clear)
     if (!feedbackTimerRef.current && !repCompleted) {
       setFeedbackMessages([]);
     }
 
-    // Rep completed → determine ONE error and show feedback
     if (repCompleted) {
       let error: string | null = null;
 
-      if (hadBalanceLossRef.current) {
-        error = "Balance loss";
+      if (hadKneesWideRef.current) {
+        error = "Knees too wide";
       } else if (minDepth < DEPTH_GOOD_MIN) {
         error = "Too deep";
       } else if (minDepth > DEPTH_GOOD_MAX) {
@@ -162,12 +150,12 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
         setFeedbackMessages([]);
       }, 2000);
 
-      if (error === "Balance loss") {
-        consecutiveBalanceRef.current += 1;
+      if (error === "Knees too wide") {
+        consecutiveCriticalRef.current += 1;
       } else {
-        consecutiveBalanceRef.current = 0;
+        consecutiveCriticalRef.current = 0;
       }
-      if (consecutiveBalanceRef.current >= CONSECUTIVE_BALANCE_FOR_STOP) {
+      if (consecutiveCriticalRef.current >= CONSECUTIVE_CRITICAL_FOR_STOP) {
         setShouldStop(true);
       }
 
@@ -175,15 +163,15 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
         setStage(AnalysisStage.DONE);
       }
 
-      hadBalanceLossRef.current = false;
+      hadKneesWideRef.current = false;
     }
   }, [poseResult, stage, calibration, calibrate, addRep, targetReps]);
 
   const reset = useCallback(() => {
     fsmRef.current = createInitialState();
     calibFramesRef.current = [];
-    consecutiveBalanceRef.current = 0;
-    hadBalanceLossRef.current = false;
+    consecutiveCriticalRef.current = 0;
+    hadKneesWideRef.current = false;
     feedbackTimerRef.current = false;
     setStage(AnalysisStage.WAITING);
     setCalibration(null);
