@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useWorkout } from "@/context/WorkoutContext";
 
 const CameraView = dynamic(() => import("@/components/CameraView"), {
@@ -18,7 +18,10 @@ const CameraView = dynamic(() => import("@/components/CameraView"), {
 
 export default function AnalysisPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { endSession, setRecordedVideo } = useWorkout();
+
+  const targetReps = parseInt(searchParams.get("reps") || "8", 10);
 
   const handleEnd = (recordedVideoUrl: string | null) => {
     endSession();
@@ -28,7 +31,7 @@ export default function AnalysisPage() {
 
   return (
     <div className="h-full">
-      <CameraView onEnd={handleEnd} />
+      <CameraView onEnd={handleEnd} targetReps={targetReps} />
     </div>
   );
 }

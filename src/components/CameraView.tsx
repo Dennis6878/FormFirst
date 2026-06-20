@@ -12,9 +12,10 @@ import { Camera, Square, AlertOctagon } from "lucide-react";
 
 interface CameraViewProps {
   onEnd: (recordedVideoUrl: string | null) => void;
+  targetReps: number;
 }
 
-export default function CameraView({ onEnd }: CameraViewProps) {
+export default function CameraView({ onEnd, targetReps }: CameraViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const compositeCanvasRef = useRef<HTMLCanvasElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -22,10 +23,18 @@ export default function CameraView({ onEnd }: CameraViewProps) {
   const [stopDismissed, setStopDismissed] = useState(false);
   const { videoRef, isReady, error, start, stop } = useCamera();
   const { result, isLoading } = usePoseDetection(videoRef, isReady);
-  const { stage, repCount, feedbackMessages, shouldStop, skeletonColor } = useSquatAnalysis(result);
+  const { stage, repCount, feedbackMessages, shouldStop, skeletonColor, countdown } = useSquatAnalysis(result, targetReps);
 
   useEffect(() => { start(); return () => stop(); }, [start, stop]);
   useEffect(() => { if (shouldStop) setStopDismissed(false); }, [shouldStop]);
+
+  // Auto-end when done
+  useEffect(() => {
+    if (stage === AnalysisStage.DONE) {
+      const t = setTimeout(() => handleEnd(), 1500);
+      return () => clearTimeout(t);
+    }
+  }, [stage]);
 
   useEffect(() => {
     if (stage !== AnalysisStage.ACTIVE) return;
@@ -61,7 +70,6 @@ export default function CameraView({ onEnd }: CameraViewProps) {
       ctx.clearRect(0, 0, vw, vh);
     }
 
-    // Composite for recording
     cctx.save(); cctx.translate(vw, 0); cctx.scale(-1, 1);
     cctx.drawImage(video, 0, 0, vw, vh); cctx.restore();
     cctx.save(); cctx.translate(vw, 0); cctx.scale(-1, 1);
@@ -82,10 +90,10 @@ export default function CameraView({ onEnd }: CameraViewProps) {
 
     if (stage === AnalysisStage.ACTIVE) {
       cctx.font = "bold 28px sans-serif"; cctx.textAlign = "left";
-      cctx.fillStyle = "rgba(0,0,0,0.6)"; cctx.fillRect(10, vh - 50, 100, 40);
-      cctx.fillStyle = "#ffffff"; cctx.fillText(`Rep ${repCount}`, 20, vh - 20);
+      cctx.fillStyle = "rgba(0,0,0,0.6)"; cctx.fillRect(10, vh - 50, 120, 40);
+      cctx.fillStyle = "#ffffff"; cctx.fillText(`${repCount}/${targetReps}`, 20, vh - 20);
     }
-  }, [result, feedbackMessages, skeletonColor, videoRef, stage, repCount]);
+  }, [result, feedbackMessages, skeletonColor, videoRef, stage, repCount, targetReps]);
 
   useEffect(() => { drawOverlay(); }, [drawOverlay]);
 
@@ -119,6 +127,7 @@ export default function CameraView({ onEnd }: CameraViewProps) {
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover -scale-x-100" />
       <canvas ref={compositeCanvasRef} className="hidden" />
 
+      {/* Loading */}
       {(isLoading || !isReady) && (
         <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
           <div className="text-center">
@@ -129,6 +138,7 @@ export default function CameraView({ onEnd }: CameraViewProps) {
         </div>
       )}
 
+      {/* Calibrating */}
       {stage === AnalysisStage.CALIBRATING && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="bg-black/70 backdrop-blur-xl rounded-2xl px-8 py-7 text-center mx-8">
@@ -139,11 +149,36 @@ export default function CameraView({ onEnd }: CameraViewProps) {
         </div>
       )}
 
-      {stage === AnalysisStage.ACTIVE && (
-        <RepCounter repCount={repCount} feedbackMessages={feedbackMessages} />
+      {/* Countdown */}
+      {stage === AnalysisStage.COUNTDOWN && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-[96px] font-bold text-white tabular-nums leading-none drop-shadow-2xl">
+              {countdown}
+            </div>
+            <p className="text-white/60 text-[14px] mt-3 font-medium">Get ready</p>
+          </div>
+        </div>
       )}
 
-      {shouldStop && !stopDismissed && (
+      {/* Active */}
+      {stage === AnalysisStage.ACTIVE && (
+        <RepCounter repCount={repCount} feedbackMessages={feedbackMessages} targetReps={targetReps} />
+      )}
+
+      {/* Done */}
+      {stage === AnalysisStage.DONE && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="text-center">
+            <div className="text-[64px] leading-none mb-2">🎉</div>
+            <p className="text-white font-bold text-[22px]">Set Complete!</p>
+            <p className="text-white/60 text-[13px] mt-1">{repCount} reps done</p>
+          </div>
+        </div>
+      )}
+
+      {/* Stop warning */}
+      {shouldStop && !stopDismissed && stage === AnalysisStage.ACTIVE && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-20">
           <div className="bg-zinc-900 rounded-3xl mx-6 p-6 text-center shadow-2xl border border-red-500/30 max-w-[320px]">
             <div className="w-14 h-14 rounded-full bg-red-500/15 flex items-center justify-center mx-auto mb-4">
@@ -165,15 +200,18 @@ export default function CameraView({ onEnd }: CameraViewProps) {
         </div>
       )}
 
-      <div className="absolute bottom-0 left-0 right-0 pb-10 pt-20 bg-gradient-to-t from-black/70 to-transparent z-10">
-        <div className="flex items-center justify-center gap-4 px-6">
-          <AudioToggle feedbackMessages={feedbackMessages} repCount={repCount} />
-          <button onClick={handleEnd} className="h-11 px-7 rounded-full bg-white text-zinc-900 font-semibold text-[13px] flex items-center gap-2 shadow-lg active:scale-95 transition-transform">
-            <Square className="w-3.5 h-3.5" fill="currentColor" />
-            End Workout
-          </button>
+      {/* Bottom controls */}
+      {stage === AnalysisStage.ACTIVE && (
+        <div className="absolute bottom-0 left-0 right-0 pb-10 pt-20 bg-gradient-to-t from-black/70 to-transparent z-10">
+          <div className="flex items-center justify-center gap-4 px-6">
+            <AudioToggle feedbackMessages={feedbackMessages} repCount={repCount} />
+            <button onClick={handleEnd} className="h-11 px-7 rounded-full bg-white text-zinc-900 font-semibold text-[13px] flex items-center gap-2 shadow-lg active:scale-95 transition-transform">
+              <Square className="w-3.5 h-3.5" fill="currentColor" />
+              End Workout
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

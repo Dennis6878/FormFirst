@@ -21,5 +21,7 @@ export interface CalibrationData {
 export enum AnalysisStage {
   WAITING = "WAITING",
   CALIBRATING = "CALIBRATING",
+  COUNTDOWN = "COUNTDOWN",
   ACTIVE = "ACTIVE",
+  DONE = "DONE",
 }

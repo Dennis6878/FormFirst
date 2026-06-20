@@ -20,17 +20,17 @@ interface Landmark { x: number; y: number; z: number; visibility?: number }
 
 export type SkeletonColor = "blue" | "green" | "red";
 
-const REQUIRED_LANDMARKS = [
+const REQUIRED = [
   LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP,
   LANDMARKS.LEFT_KNEE, LANDMARKS.RIGHT_KNEE,
   LANDMARKS.LEFT_SHOULDER, LANDMARKS.RIGHT_SHOULDER,
 ];
 
 function landmarksOk(lm: Landmark[]): boolean {
-  return REQUIRED_LANDMARKS.every((i) => (lm[i]?.visibility ?? 0) >= MIN_VISIBILITY);
+  return REQUIRED.every((i) => (lm[i]?.visibility ?? 0) >= MIN_VISIBILITY);
 }
 
-export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
+export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, targetReps: number = 8) {
   const { addRep, setCalibration: setCtxCalibration } = useWorkout();
 
   const [stage, setStage] = useState<AnalysisStage>(AnalysisStage.WAITING);
@@ -39,6 +39,7 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
   const [feedbackMessages, setFeedbackMessages] = useState<string[]>([]);
   const [shouldStop, setShouldStop] = useState(false);
   const [skeletonColor, setSkeletonColor] = useState<SkeletonColor>("blue");
+  const [countdown, setCountdown] = useState(0);
 
   const fsmRef = useRef<StateMachineState>(createInitialState());
   const calibFramesRef = useRef<Landmark[][]>([]);
@@ -80,9 +81,27 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
 
     setCalibration(data);
     setCtxCalibration(data);
-    setStage(AnalysisStage.ACTIVE);
-    fsmRef.current = createInitialState();
+    // Start countdown instead of going directly to ACTIVE
+    setStage(AnalysisStage.COUNTDOWN);
+    setCountdown(10);
   }, [setCtxCalibration]);
+
+  // --- Countdown timer ---
+  useEffect(() => {
+    if (stage !== AnalysisStage.COUNTDOWN || countdown <= 0) return;
+
+    const timer = setTimeout(() => {
+      if (countdown <= 1) {
+        setStage(AnalysisStage.ACTIVE);
+        fsmRef.current = createInitialState();
+        setCountdown(0);
+      } else {
+        setCountdown(countdown - 1);
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [stage, countdown]);
 
   // --- Main loop ---
   useEffect(() => {
@@ -107,9 +126,11 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
     fsmRef.current = newState;
 
     // 3. Skeleton color
+    // Green ONLY when depth is in the good zone (between GOOD_MIN and GOOD_MAX)
+    // This means they're actually squatting deep enough but not too deep
     if (isBalanceLoss || depthRatio < DEPTH_GOOD_MIN) {
       setSkeletonColor("red");
-    } else if (depthRatio <= DEPTH_GOOD_MAX && newState.isDown) {
+    } else if (depthRatio >= DEPTH_GOOD_MIN && depthRatio <= DEPTH_GOOD_MAX) {
       setSkeletonColor("green");
     } else {
       setSkeletonColor("blue");
@@ -126,16 +147,12 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
       repErrorsRef.current.push("Not deep enough");
     }
 
-    // 5. Live feedback for dangerous errors (balance loss + too deep)
+    // 5. Live feedback for dangerous errors
     if (!feedbackTimerRef.current) {
       const live: string[] = [];
       if (isBalanceLoss) live.push("Balance loss");
       if (depthRatio < DEPTH_GOOD_MIN) live.push("Too deep");
-      if (live.length > 0) {
-        setFeedbackMessages(live);
-      } else {
-        setFeedbackMessages([]);
-      }
+      setFeedbackMessages(live.length > 0 ? live : []);
     }
 
     // 6. Rep completed
@@ -144,7 +161,6 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
       addRep({ repNumber: newState.repCount, errors, timestamp: Date.now() });
       setRepCount(newState.repCount);
 
-      // Show feedback
       setFeedbackMessages(errors.length > 0 ? errors : ["Good rep!"]);
       feedbackTimerRef.current = true;
       setTimeout(() => {
@@ -152,7 +168,6 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
         setFeedbackMessages([]);
       }, 2000);
 
-      // Consecutive balance check
       if (errors.includes("Balance loss")) {
         consecutiveBalanceRef.current += 1;
       } else {
@@ -162,9 +177,14 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
         setShouldStop(true);
       }
 
+      // Auto-end when target reps reached
+      if (newState.repCount >= targetReps) {
+        setStage(AnalysisStage.DONE);
+      }
+
       repErrorsRef.current = [];
     }
-  }, [poseResult, stage, calibration, calibrate, addRep]);
+  }, [poseResult, stage, calibration, calibrate, addRep, targetReps]);
 
   const reset = useCallback(() => {
     fsmRef.current = createInitialState();
@@ -178,7 +198,8 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
     setFeedbackMessages([]);
     setShouldStop(false);
     setSkeletonColor("blue");
+    setCountdown(0);
   }, []);
 
-  return { stage, repCount, feedbackMessages, shouldStop, skeletonColor, reset };
+  return { stage, repCount, feedbackMessages, shouldStop, skeletonColor, countdown, targetReps, reset };
 }

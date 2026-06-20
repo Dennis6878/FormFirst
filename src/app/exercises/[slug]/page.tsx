@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useWorkout } from "@/context/WorkoutContext";
-import { ChevronLeft, Play, Clock, Zap, Target, Shield, Lightbulb, TrendingUp } from "lucide-react";
+import { ChevronLeft, Play, Clock, Zap, Target, Shield, Lightbulb, TrendingUp, Minus, Plus } from "lucide-react";
 
 const EXERCISE_DATA: Record<string, {
   title: string;
@@ -57,10 +58,11 @@ export default function ExerciseDetailPage() {
   }
 
   const lastSession = getLastSession(slug);
+  const [targetReps, setTargetReps] = useState(8);
 
   const handleStart = () => {
     startSession(slug);
-    router.push(`/analysis?exercise=${slug}`);
+    router.push(`/analysis?exercise=${slug}&reps=${targetReps}`);
   };
 
   return (
@@ -166,13 +168,24 @@ export default function ExerciseDetailPage() {
             )}
           </div>
         )}
-        <button
-          onClick={handleStart}
-          className="w-full h-11 rounded-lg bg-foreground text-white font-medium text-[14px] hover:bg-foreground/90 transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
-        >
-          <Play className="w-4 h-4" fill="currentColor" />
-          Start Analysis
-        </button>
+        <div className="flex gap-2.5">
+          <div className="flex items-center gap-0 bg-surface border border-border rounded-lg overflow-hidden">
+            <button onClick={() => setTargetReps(Math.max(1, targetReps - 1))} className="w-9 h-11 flex items-center justify-center text-muted hover:text-foreground transition-colors">
+              <Minus className="w-3.5 h-3.5" />
+            </button>
+            <span className="w-8 text-center text-[14px] font-bold text-foreground tabular-nums">{targetReps}</span>
+            <button onClick={() => setTargetReps(Math.min(30, targetReps + 1))} className="w-9 h-11 flex items-center justify-center text-muted hover:text-foreground transition-colors">
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <button
+            onClick={handleStart}
+            className="flex-1 h-11 rounded-lg bg-foreground text-white font-medium text-[14px] hover:bg-foreground/90 transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
+          >
+            <Play className="w-4 h-4" fill="currentColor" />
+            Start
+          </button>
+        </div>
       </div>
     </div>
   );
