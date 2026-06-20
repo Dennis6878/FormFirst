@@ -72,16 +72,14 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
     const delta = kneeY - hipY;
     if (delta < 0.01) { calibFramesRef.current = []; return; }
 
-    setCalibration({
+    const data: CalibrationData = {
       standingHipKneeDelta: delta,
       standingShoulderMidX: (al[LANDMARKS.LEFT_SHOULDER].x + al[LANDMARKS.RIGHT_SHOULDER].x) / 2,
       standingHipMidX: (al[LANDMARKS.LEFT_HIP].x + al[LANDMARKS.RIGHT_HIP].x) / 2,
-    });
-    setCtxCalibration({
-      standingHipKneeDelta: delta,
-      standingShoulderMidX: (al[LANDMARKS.LEFT_SHOULDER].x + al[LANDMARKS.RIGHT_SHOULDER].x) / 2,
-      standingHipMidX: (al[LANDMARKS.LEFT_HIP].x + al[LANDMARKS.RIGHT_HIP].x) / 2,
-    });
+    };
+
+    setCalibration(data);
+    setCtxCalibration(data);
     setStage(AnalysisStage.COUNTDOWN);
     setCountdown(10);
   }, [setCtxCalibration]);
@@ -118,36 +116,33 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
     const { newState, repCompleted, minDepth } = transition(fsmRef.current, lm, calibration);
     fsmRef.current = newState;
 
-    // Track if balance loss happened at any point during this rep
+    // Track balance loss during the down phase of this rep
     if (isBalanceLoss && newState.isDown) {
       hadBalanceLossRef.current = true;
     }
 
-    // Skeleton color (live, every frame)
-    if (isBalanceLoss || depthRatio < DEPTH_GOOD_MIN) {
+    // Skeleton color:
+    // - Red: balance loss OR too deep (only while actually squatting)
+    // - Green: in good depth zone AND in down state
+    // - Blue: everything else (standing, descending before good zone, ascending)
+    if (newState.isDown && (isBalanceLoss || depthRatio < DEPTH_GOOD_MIN)) {
       setSkeletonColor("red");
-    } else if (depthRatio >= DEPTH_GOOD_MIN && depthRatio <= DEPTH_GOOD_MAX) {
+    } else if (newState.isDown && depthRatio >= DEPTH_GOOD_MIN && depthRatio <= DEPTH_GOOD_MAX) {
       setSkeletonColor("green");
     } else {
       setSkeletonColor("blue");
     }
 
-    // Live feedback for dangerous stuff (only when not showing rep feedback)
-    if (!feedbackTimerRef.current) {
-      if (isBalanceLoss) {
-        setFeedbackMessages(["Balance loss"]);
-      } else if (depthRatio < DEPTH_GOOD_MIN) {
-        setFeedbackMessages(["Too deep"]);
-      } else {
-        setFeedbackMessages([]);
-      }
+    // NO live feedback text between reps — feedback ONLY shown after rep completes
+    // (feedbackTimerRef controls this: true = showing post-rep feedback, false = clear)
+    if (!feedbackTimerRef.current && !repCompleted) {
+      setFeedbackMessages([]);
     }
 
-    // Rep completed → determine ONE error
+    // Rep completed → determine ONE error and show feedback
     if (repCompleted) {
       let error: string | null = null;
 
-      // Priority: balance loss > too deep > not deep enough
       if (hadBalanceLossRef.current) {
         error = "Balance loss";
       } else if (minDepth < DEPTH_GOOD_MIN) {
@@ -160,7 +155,6 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
       addRep({ repNumber: newState.repCount, errors, timestamp: Date.now() });
       setRepCount(newState.repCount);
 
-      // Show feedback
       setFeedbackMessages(error ? [error] : ["Good rep!"]);
       feedbackTimerRef.current = true;
       setTimeout(() => {
@@ -168,7 +162,6 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
         setFeedbackMessages([]);
       }, 2000);
 
-      // Consecutive balance check
       if (error === "Balance loss") {
         consecutiveBalanceRef.current += 1;
       } else {
@@ -178,12 +171,10 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
         setShouldStop(true);
       }
 
-      // Auto-end
       if (newState.repCount >= targetReps) {
         setStage(AnalysisStage.DONE);
       }
 
-      // Reset per-rep tracking
       hadBalanceLossRef.current = false;
     }
   }, [poseResult, stage, calibration, calibrate, addRep, targetReps]);

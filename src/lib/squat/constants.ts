@@ -24,8 +24,9 @@ export const DOWN_THRESHOLD = 0.85;
 export const UP_THRESHOLD = 0.90;
 export const MIN_REP_INTERVAL_MS = 500;
 
-// Balance: shoulder-hip horizontal offset
-export const BALANCE_THRESHOLD = 0.035;
+// Balance: shoulder-hip horizontal offset (normalized 0–1)
+// Checked relative to calibrated standing offset to ignore natural lean
+export const BALANCE_THRESHOLD = 0.04;
 
 export const CONSECUTIVE_BALANCE_FOR_STOP = 2;
 

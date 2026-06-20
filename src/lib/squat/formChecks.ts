@@ -1,12 +1,7 @@
 import { LANDMARKS, BALANCE_THRESHOLD } from "./constants";
 import type { CalibrationData } from "./types";
 
-interface Landmark {
-  x: number;
-  y: number;
-  z: number;
-  visibility?: number;
-}
+interface Landmark { x: number; y: number; z: number; visibility?: number }
 
 export interface FrameAnalysis {
   depthRatio: number;
@@ -20,7 +15,10 @@ export function analyzeFrame(landmarks: Landmark[], calibration: CalibrationData
 
   const shoulderMidX = (landmarks[LANDMARKS.LEFT_SHOULDER].x + landmarks[LANDMARKS.RIGHT_SHOULDER].x) / 2;
   const hipMidX = (landmarks[LANDMARKS.LEFT_HIP].x + landmarks[LANDMARKS.RIGHT_HIP].x) / 2;
-  const isBalanceLoss = Math.abs(shoulderMidX - hipMidX) > BALANCE_THRESHOLD;
+  const currentOffset = Math.abs(shoulderMidX - hipMidX);
+  const standingOffset = Math.abs(calibration.standingShoulderMidX - calibration.standingHipMidX);
+  // Compare against calibrated standing offset — only flag if it INCREASED significantly
+  const isBalanceLoss = (currentOffset - standingOffset) > BALANCE_THRESHOLD;
 
   return { depthRatio, isBalanceLoss };
 }
