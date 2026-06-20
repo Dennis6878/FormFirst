@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FormCheck — AI Exercise Form Checker",
+  title: "FormFirst — AI Exercise Form Checker",
   description: "Real-time exercise form analysis using AI pose estimation",
 };
 

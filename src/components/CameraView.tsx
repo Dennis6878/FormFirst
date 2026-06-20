@@ -8,7 +8,7 @@ import { drawPoseOverlay } from "@/components/PoseOverlay";
 import RepCounter from "@/components/RepCounter";
 import AudioToggle from "@/components/AudioToggle";
 import { AnalysisStage } from "@/lib/squat/types";
-import { Camera, Square, AlertOctagon } from "lucide-react";
+import { Camera, Square, AlertOctagon, CheckCircle2 } from "lucide-react";
 
 interface CameraViewProps {
   onEnd: (recordedVideoUrl: string | null) => void;
@@ -170,7 +170,7 @@ export default function CameraView({ onEnd, targetReps }: CameraViewProps) {
       {stage === AnalysisStage.DONE && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="text-center">
-            <div className="text-[64px] leading-none mb-2">🎉</div>
+            <CheckCircle2 className="w-16 h-16 text-emerald-400 mx-auto mb-2" />
             <p className="text-white font-bold text-[22px]">Set Complete!</p>
             <p className="text-white/60 text-[13px] mt-1">{repCount} reps done</p>
           </div>

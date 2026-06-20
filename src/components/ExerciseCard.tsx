@@ -5,7 +5,6 @@ import { ArrowRight } from "lucide-react";
 
 interface ExerciseCardProps {
   title: string;
-  icon: string;
   href?: string;
   fullWidth?: boolean;
   difficulty?: string;
@@ -14,7 +13,6 @@ interface ExerciseCardProps {
 
 export default function ExerciseCard({
   title,
-  icon,
   href,
   fullWidth,
   difficulty,
@@ -49,10 +47,7 @@ export default function ExerciseCard({
             </div>
           )}
         </div>
-        <div>
-          <span className="text-lg leading-none">{icon}</span>
-          <h3 className="font-semibold text-white text-[14px] mt-1 leading-tight">{title}</h3>
-        </div>
+        <h3 className="font-semibold text-white text-[14px] leading-tight">{title}</h3>
       </div>
     </div>
   );

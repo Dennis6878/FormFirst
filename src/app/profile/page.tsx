@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkout } from "@/context/WorkoutContext";
-import { Lock, Unlock, ChevronRight, Award, Calendar, Repeat, Settings, HelpCircle, LogOut } from "lucide-react";
+import { Lock, Unlock, ChevronRight, Award, Calendar, Repeat, Settings, HelpCircle, LogOut, Dumbbell } from "lucide-react";
 
 export default function ProfilePage() {
   const { userName, email, exercisesUnlocked, unlockExercises } = useAuth();
@@ -61,7 +61,7 @@ export default function ProfilePage() {
             <div className="flex items-center justify-center mb-1.5">
               <Award className="w-4 h-4 text-muted" />
             </div>
-            <div className="text-[20px] font-bold text-foreground leading-none">{sessionHistory.length > 0 ? "🔥" : "—"}</div>
+            <div className="text-[20px] font-bold text-foreground leading-none">{sessionHistory.length > 0 ? sessionHistory.length : "—"}</div>
             <div className="text-[10px] text-muted mt-1 font-medium">Streak</div>
           </div>
         </div>
@@ -102,7 +102,7 @@ export default function ProfilePage() {
                 />
                 <button
                   type="submit"
-                  className="h-9 px-4 rounded-lg bg-foreground text-white text-[12px] font-medium hover:bg-foreground/90 transition-colors active:scale-95"
+                  className="h-9 px-4 rounded-lg bg-brand text-white text-[12px] font-medium hover:bg-brand-light transition-colors active:scale-95"
                 >
                   Unlock
                 </button>
@@ -123,7 +123,7 @@ export default function ProfilePage() {
               return (
                 <div key={i} className="flex items-center justify-between px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-lg">🏋️</span>
+                    <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center"><Dumbbell className="w-4 h-4 text-brand" /></div>
                     <div>
                       <div className="text-[13px] font-medium text-foreground capitalize">{session.exercise}</div>
                       <div className="text-[11px] text-muted">{session.totalReps} reps · {pct}% good form</div>

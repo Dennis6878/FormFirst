@@ -8,39 +8,33 @@ import { Flame, Target, Trophy } from "lucide-react";
 const BASE_EXERCISES = [
   {
     title: "Mobility Analysis",
-    icon: "🧘",
     fullWidth: true,
-    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80",
+    image: "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=800&q=80",
     difficulty: "Full Body",
   },
   {
     title: "Squat",
-    icon: "🏋️",
     href: "/exercises/squat",
-    image: "https://images.unsplash.com/photo-1566241142559-40e1dab266c6?w=400&q=80",
+    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=400&q=80",
     difficulty: "Beginner",
   },
   {
     title: "Push-up",
-    icon: "💪",
     image: "https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=400&q=80",
     difficulty: "Beginner",
   },
   {
     title: "Lunge",
-    icon: "🦵",
-    image: "https://images.unsplash.com/photo-1434608519344-49d77a699e1d?w=400&q=80",
+    image: "https://images.unsplash.com/photo-1597347316205-36f6c451fc5c?w=400&q=80",
     difficulty: "Intermediate",
   },
   {
     title: "Sit-up",
-    icon: "🤸",
     image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&q=80",
     difficulty: "Beginner",
   },
   {
     title: "Plank",
-    icon: "🧱",
     image: "https://images.unsplash.com/photo-1566241142559-40e1dab266c6?w=400&q=80",
     difficulty: "Intermediate",
   },
@@ -49,19 +43,16 @@ const BASE_EXERCISES = [
 const UNLOCKED_EXERCISES = [
   {
     title: "Deadlift",
-    icon: "🏗️",
     image: "https://images.unsplash.com/photo-1534368786749-b63e05c92717?w=400&q=80",
     difficulty: "Advanced",
   },
   {
     title: "Hip Thrust",
-    icon: "🍑",
-    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=400&q=80",
+    image: "https://images.unsplash.com/photo-1579758629938-03d030f21aee?w=400&q=80",
     difficulty: "Intermediate",
   },
   {
     title: "Bulgarian Split Squat",
-    icon: "🦿",
     image: "https://images.unsplash.com/photo-1434608519344-49d77a699e1d?w=400&q=80",
     difficulty: "Advanced",
   },
@@ -86,18 +77,16 @@ export default function ExercisesPage() {
 
   return (
     <div className="flex flex-col h-full pb-4 bg-background">
-      {/* Header */}
       <div className="px-5 pt-14 pb-5">
         <p className="text-[13px] text-muted mb-0.5">Welcome back</p>
         <h1 className="text-[24px] font-bold text-foreground tracking-tight">{userName || "User"}</h1>
       </div>
 
-      {/* Stats bar */}
       <div className="px-5 mb-5">
         <div className="flex gap-2">
           <div className="flex-1 flex items-center gap-2.5 bg-surface border border-border rounded-lg px-3 py-2.5">
-            <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
-              <Flame className="w-4 h-4 text-orange-500" />
+            <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center">
+              <Flame className="w-4 h-4 text-brand" />
             </div>
             <div>
               <div className="text-[15px] font-bold text-foreground leading-none">{totalSessions}</div>
@@ -105,8 +94,8 @@ export default function ExercisesPage() {
             </div>
           </div>
           <div className="flex-1 flex items-center gap-2.5 bg-surface border border-border rounded-lg px-3 py-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-              <Target className="w-4 h-4 text-blue-500" />
+            <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center">
+              <Target className="w-4 h-4 text-brand" />
             </div>
             <div>
               <div className="text-[15px] font-bold text-foreground leading-none">{totalReps}</div>
@@ -114,8 +103,8 @@ export default function ExercisesPage() {
             </div>
           </div>
           <div className="flex-1 flex items-center gap-2.5 bg-surface border border-border rounded-lg px-3 py-2.5">
-            <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
-              <Trophy className="w-4 h-4 text-green-500" />
+            <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center">
+              <Trophy className="w-4 h-4 text-brand" />
             </div>
             <div>
               <div className="text-[15px] font-bold text-foreground leading-none">{avgScore}%</div>
@@ -125,7 +114,6 @@ export default function ExercisesPage() {
         </div>
       </div>
 
-      {/* Exercises */}
       <div className="px-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-[14px] font-semibold text-foreground">Exercises</h2>

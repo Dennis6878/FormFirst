@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkout } from "@/context/WorkoutContext";
-import { CheckCircle2, AlertTriangle, Sparkles, ArrowRight, Play } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Sparkles, ArrowRight, Target } from "lucide-react";
 
 export default function SummaryPage() {
   const router = useRouter();
@@ -47,7 +47,7 @@ export default function SummaryPage() {
     return (
       <div className="flex flex-col items-center justify-center h-full px-8 text-center bg-background">
         <div className="w-14 h-14 rounded-full bg-surface border border-border flex items-center justify-center mb-4">
-          <span className="text-2xl">🏋️</span>
+          <Target className="w-6 h-6 text-muted" />
         </div>
         <p className="text-foreground font-semibold text-[16px] mb-1">No reps recorded</p>
         <p className="text-muted text-[13px] mb-6">Make sure the camera can see your full body.</p>
@@ -134,8 +134,8 @@ export default function SummaryPage() {
             <h2 className="text-[12px] font-semibold text-muted uppercase tracking-wider mb-2.5">AI Coaching</h2>
             <div className="bg-surface border border-border rounded-xl p-4">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center">
-                  <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+                <div className="w-7 h-7 rounded-lg bg-brand/10 flex items-center justify-center">
+                  <Sparkles className="w-3.5 h-3.5 text-brand" />
                 </div>
                 <div>
                   <div className="text-[12px] font-semibold text-foreground">Focus Area</div>

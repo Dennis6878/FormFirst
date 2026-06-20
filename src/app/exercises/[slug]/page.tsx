@@ -10,7 +10,6 @@ const EXERCISE_DATA: Record<string, {
   title: string;
   description: string;
   videoId: string;
-  icon: string;
   muscles: string[];
   tips: { icon: typeof Shield; title: string; text: string }[];
 }> = {
@@ -30,7 +29,6 @@ Common mistakes include: knees caving inward, excessive forward lean, rising on 
 
 For beginners, start with bodyweight squats to master the movement pattern. Once comfortable, progress to goblet squats, then barbell back squats. Aim for 3-4 sets of 8-12 reps with controlled tempo.`,
     videoId: "YaXPRqUwItQ",
-    icon: "🏋️",
     muscles: ["Quadriceps", "Glutes", "Hamstrings", "Core"],
     tips: [
       { icon: Shield, title: "Knee Safety", text: "Keep knees tracking over toes, never caving inward" },
@@ -79,12 +77,9 @@ export default function ExerciseDetailPage() {
 
         {/* Title */}
         <div className="px-5 mb-4">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-3xl">{exercise.icon}</span>
-            <div>
-              <h1 className="text-[22px] font-bold text-foreground tracking-tight">{exercise.title}</h1>
-              <span className="text-[12px] text-muted">Beginner · Compound</span>
-            </div>
+          <div className="mb-4">
+            <h1 className="text-[22px] font-bold text-foreground tracking-tight">{exercise.title}</h1>
+            <span className="text-[12px] text-muted">Beginner · Compound</span>
           </div>
 
           {/* Info chips */}
@@ -180,7 +175,7 @@ export default function ExerciseDetailPage() {
           </div>
           <button
             onClick={handleStart}
-            className="flex-1 h-11 rounded-lg bg-foreground text-white font-medium text-[14px] hover:bg-foreground/90 transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
+            className="flex-1 h-11 rounded-lg bg-brand text-white font-medium text-[14px] hover:bg-brand-light transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
           >
             <Play className="w-4 h-4" fill="currentColor" />
             Start

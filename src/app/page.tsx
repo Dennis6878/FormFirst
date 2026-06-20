@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
-import { Activity, Camera, BarChart3 } from "lucide-react";
+import { Camera, BarChart3, Sparkles } from "lucide-react";
 
 export default function LoginPage() {
   const [name, setName] = useState("");
@@ -19,13 +20,10 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Top section */}
       <div className="bg-foreground text-white px-7 pt-16 pb-8 rounded-b-[2rem]">
-        <div className="flex items-center gap-2.5 mb-6">
-          <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center">
-            <Activity className="w-5 h-5 text-foreground" strokeWidth={2.5} />
-          </div>
-          <span className="text-[18px] font-bold tracking-tight">FormCheck</span>
+        <div className="flex items-center gap-3 mb-6">
+          <Image src="/logo.png" alt="FormFirst" width={44} height={44} className="rounded-xl" />
+          <span className="text-[18px] font-bold tracking-tight">FormFirst</span>
         </div>
         <h1 className="text-[26px] font-bold tracking-tight leading-[1.2] mb-2">
           Perfect your form<br />with AI coaching
@@ -34,22 +32,20 @@ export default function LoginPage() {
           Real-time pose analysis and instant feedback for every rep.
         </p>
 
-        {/* Feature pills */}
         <div className="flex gap-2 mt-5">
           {[
             { icon: Camera, label: "Live Analysis" },
             { icon: BarChart3, label: "Rep Tracking" },
-            { icon: Activity, label: "AI Coaching" },
+            { icon: Sparkles, label: "AI Coaching" },
           ].map(({ icon: Icon, label }) => (
             <div key={label} className="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1.5">
-              <Icon className="w-3 h-3 text-zinc-400" />
+              <Icon className="w-3 h-3 text-brand" />
               <span className="text-[11px] font-medium text-zinc-300">{label}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Form section */}
       <div className="flex-1 px-7 pt-7 pb-6 flex flex-col">
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div>
@@ -59,7 +55,7 @@ export default function LoginPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your name"
-              className="w-full h-11 px-3.5 rounded-lg border border-border bg-background text-foreground text-[14px] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/5 focus:border-foreground/20 transition-all"
+              className="w-full h-11 px-3.5 rounded-lg border border-border bg-background text-foreground text-[14px] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/10 focus:border-brand/30 transition-all"
             />
           </div>
           <div>
@@ -69,12 +65,12 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
-              className="w-full h-11 px-3.5 rounded-lg border border-border bg-background text-foreground text-[14px] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/5 focus:border-foreground/20 transition-all"
+              className="w-full h-11 px-3.5 rounded-lg border border-border bg-background text-foreground text-[14px] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/10 focus:border-brand/30 transition-all"
             />
           </div>
           <button
             type="submit"
-            className="w-full h-11 mt-1 rounded-lg bg-foreground text-white font-medium text-[14px] hover:bg-foreground/90 transition-colors active:scale-[0.98]"
+            className="w-full h-11 mt-1 rounded-lg bg-brand text-white font-medium text-[14px] hover:bg-brand-light transition-colors active:scale-[0.98]"
           >
             Get Started
           </button>

@@ -31,7 +31,7 @@ export default function MobileShell({ children }: { children: React.ReactNode })
                     key={item.href}
                     href={item.href}
                     className={`flex flex-col items-center gap-1 py-2 px-6 transition-colors ${
-                      active ? "text-foreground" : "text-muted-foreground hover:text-muted"
+                      active ? "text-brand" : "text-muted-foreground hover:text-muted"
                     }`}
                   >
                     <item.Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 1.5} />
