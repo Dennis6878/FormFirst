@@ -15,28 +15,21 @@ export const CALIBRATION_FRAMES = 25;
 export const CALIBRATION_STABILITY = 0.04;
 
 // Depth ratio = current hip-knee distance / standing hip-knee distance
-// Goes from ~1.0 (standing) toward 0 (deep squat)
+// ~1.0 standing, drops toward 0 as you squat deeper
 export const DEPTH_GOOD_MIN = 0.30;
 export const DEPTH_GOOD_MAX = 0.65;
 
-// Rep counting: 2-state hysteresis
+// Rep counting
 export const DOWN_THRESHOLD = 0.85;
-export const UP_THRESHOLD = 0.93;
+export const UP_THRESHOLD = 0.90;
 export const MIN_REP_INTERVAL_MS = 500;
 
-// Balance: shoulder-hip horizontal offset (normalized 0–1)
+// Balance: shoulder-hip horizontal offset
 export const BALANCE_THRESHOLD = 0.06;
 
-// Stop popup after N consecutive balance-loss reps
 export const CONSECUTIVE_BALANCE_FOR_STOP = 2;
 
 export const POSE_CONNECTIONS: [number, number][] = [
-  [11, 12],
-  [11, 23],
-  [12, 24],
-  [23, 24],
-  [23, 25],
-  [24, 26],
-  [25, 27],
-  [26, 28],
+  [11, 12], [11, 23], [12, 24], [23, 24],
+  [23, 25], [24, 26], [25, 27], [26, 28],
 ];

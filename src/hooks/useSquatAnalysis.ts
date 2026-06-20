@@ -44,10 +44,9 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
   const fsmRef = useRef<StateMachineState>(createInitialState());
   const calibFramesRef = useRef<Landmark[][]>([]);
   const consecutiveBalanceRef = useRef(0);
-  const repErrorsRef = useRef<string[]>([]);
+  const hadBalanceLossRef = useRef(false);
   const feedbackTimerRef = useRef(false);
 
-  // --- Calibration ---
   const calibrate = useCallback((landmarks: Landmark[]) => {
     if (!landmarksOk(landmarks)) { calibFramesRef.current = []; return; }
 
@@ -73,24 +72,23 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
     const delta = kneeY - hipY;
     if (delta < 0.01) { calibFramesRef.current = []; return; }
 
-    const data: CalibrationData = {
+    setCalibration({
       standingHipKneeDelta: delta,
       standingShoulderMidX: (al[LANDMARKS.LEFT_SHOULDER].x + al[LANDMARKS.RIGHT_SHOULDER].x) / 2,
       standingHipMidX: (al[LANDMARKS.LEFT_HIP].x + al[LANDMARKS.RIGHT_HIP].x) / 2,
-    };
-
-    setCalibration(data);
-    setCtxCalibration(data);
-    // Start countdown instead of going directly to ACTIVE
+    });
+    setCtxCalibration({
+      standingHipKneeDelta: delta,
+      standingShoulderMidX: (al[LANDMARKS.LEFT_SHOULDER].x + al[LANDMARKS.RIGHT_SHOULDER].x) / 2,
+      standingHipMidX: (al[LANDMARKS.LEFT_HIP].x + al[LANDMARKS.RIGHT_HIP].x) / 2,
+    });
     setStage(AnalysisStage.COUNTDOWN);
     setCountdown(10);
   }, [setCtxCalibration]);
 
-  // --- Countdown timer ---
   useEffect(() => {
     if (stage !== AnalysisStage.COUNTDOWN || countdown <= 0) return;
-
-    const timer = setTimeout(() => {
+    const t = setTimeout(() => {
       if (countdown <= 1) {
         setStage(AnalysisStage.ACTIVE);
         fsmRef.current = createInitialState();
@@ -99,11 +97,9 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
         setCountdown(countdown - 1);
       }
     }, 1000);
-
-    return () => clearTimeout(timer);
+    return () => clearTimeout(t);
   }, [stage, countdown]);
 
-  // --- Main loop ---
   useEffect(() => {
     if (!poseResult?.landmarks?.[0]) return;
     const lm = poseResult.landmarks[0] as Landmark[];
@@ -118,16 +114,16 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
     if (stage !== AnalysisStage.ACTIVE || !calibration) return;
     if (!landmarksOk(lm)) return;
 
-    // 1. Analyze frame
     const { depthRatio, isBalanceLoss } = analyzeFrame(lm, calibration);
-
-    // 2. FSM
-    const { newState, repCompleted } = transition(fsmRef.current, lm, calibration);
+    const { newState, repCompleted, minDepth } = transition(fsmRef.current, lm, calibration);
     fsmRef.current = newState;
 
-    // 3. Skeleton color
-    // Green ONLY when depth is in the good zone (between GOOD_MIN and GOOD_MAX)
-    // This means they're actually squatting deep enough but not too deep
+    // Track if balance loss happened at any point during this rep
+    if (isBalanceLoss && newState.isDown) {
+      hadBalanceLossRef.current = true;
+    }
+
+    // Skeleton color (live, every frame)
     if (isBalanceLoss || depthRatio < DEPTH_GOOD_MIN) {
       setSkeletonColor("red");
     } else if (depthRatio >= DEPTH_GOOD_MIN && depthRatio <= DEPTH_GOOD_MAX) {
@@ -136,39 +132,44 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
       setSkeletonColor("blue");
     }
 
-    // 4. Collect errors during rep
-    if (isBalanceLoss && !repErrorsRef.current.includes("Balance loss")) {
-      repErrorsRef.current.push("Balance loss");
-    }
-    if (depthRatio < DEPTH_GOOD_MIN && !repErrorsRef.current.includes("Too deep")) {
-      repErrorsRef.current.push("Too deep");
-    }
-    if (newState.isDown && depthRatio > DEPTH_GOOD_MAX && !repErrorsRef.current.includes("Not deep enough")) {
-      repErrorsRef.current.push("Not deep enough");
-    }
-
-    // 5. Live feedback for dangerous errors
+    // Live feedback for dangerous stuff (only when not showing rep feedback)
     if (!feedbackTimerRef.current) {
-      const live: string[] = [];
-      if (isBalanceLoss) live.push("Balance loss");
-      if (depthRatio < DEPTH_GOOD_MIN) live.push("Too deep");
-      setFeedbackMessages(live.length > 0 ? live : []);
+      if (isBalanceLoss) {
+        setFeedbackMessages(["Balance loss"]);
+      } else if (depthRatio < DEPTH_GOOD_MIN) {
+        setFeedbackMessages(["Too deep"]);
+      } else {
+        setFeedbackMessages([]);
+      }
     }
 
-    // 6. Rep completed
+    // Rep completed → determine ONE error
     if (repCompleted) {
-      const errors = [...repErrorsRef.current];
+      let error: string | null = null;
+
+      // Priority: balance loss > too deep > not deep enough
+      if (hadBalanceLossRef.current) {
+        error = "Balance loss";
+      } else if (minDepth < DEPTH_GOOD_MIN) {
+        error = "Too deep";
+      } else if (minDepth > DEPTH_GOOD_MAX) {
+        error = "Not deep enough";
+      }
+
+      const errors = error ? [error] : [];
       addRep({ repNumber: newState.repCount, errors, timestamp: Date.now() });
       setRepCount(newState.repCount);
 
-      setFeedbackMessages(errors.length > 0 ? errors : ["Good rep!"]);
+      // Show feedback
+      setFeedbackMessages(error ? [error] : ["Good rep!"]);
       feedbackTimerRef.current = true;
       setTimeout(() => {
         feedbackTimerRef.current = false;
         setFeedbackMessages([]);
       }, 2000);
 
-      if (errors.includes("Balance loss")) {
+      // Consecutive balance check
+      if (error === "Balance loss") {
         consecutiveBalanceRef.current += 1;
       } else {
         consecutiveBalanceRef.current = 0;
@@ -177,12 +178,13 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
         setShouldStop(true);
       }
 
-      // Auto-end when target reps reached
+      // Auto-end
       if (newState.repCount >= targetReps) {
         setStage(AnalysisStage.DONE);
       }
 
-      repErrorsRef.current = [];
+      // Reset per-rep tracking
+      hadBalanceLossRef.current = false;
     }
   }, [poseResult, stage, calibration, calibrate, addRep, targetReps]);
 
@@ -190,7 +192,7 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
     fsmRef.current = createInitialState();
     calibFramesRef.current = [];
     consecutiveBalanceRef.current = 0;
-    repErrorsRef.current = [];
+    hadBalanceLossRef.current = false;
     feedbackTimerRef.current = false;
     setStage(AnalysisStage.WAITING);
     setCalibration(null);
