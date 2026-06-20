@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import type { PoseLandmarkerResult } from "@mediapipe/tasks-vision";
-import { AnalysisStage, SquatPhase, type CalibrationData, type RepLog } from "@/lib/squat/types";
+import { AnalysisStage, type CalibrationData, type RepLog } from "@/lib/squat/types";
 import {
   LANDMARKS,
   CALIBRATION_FRAMES,
@@ -12,8 +12,8 @@ import {
   DEPTH_SUFFICIENT_RATIO,
   DEPTH_TOO_LOW_RATIO,
 } from "@/lib/squat/constants";
-import { createInitialState, transition, getDepthRatio, type StateMachineState } from "@/lib/squat/stateMachine";
-import { checkKneeValgus, checkTrunkShift, runAllChecks } from "@/lib/squat/formChecks";
+import { createInitialState, transition, type StateMachineState } from "@/lib/squat/stateMachine";
+import { checkKneeValgus, checkTrunkShift, checkDepth, runAllChecks } from "@/lib/squat/formChecks";
 import { useWorkout } from "@/context/WorkoutContext";
 
 interface Landmark {
@@ -45,7 +45,7 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
   const [repCount, setRepCount] = useState(0);
   const [feedbackMessages, setFeedbackMessages] = useState<string[]>([]);
   const [shouldStop, setShouldStop] = useState(false);
-  const [phase, setPhase] = useState("STANDING");
+  const [phase, setPhase] = useState("UP");
   const [hasLiveError, setHasLiveError] = useState(false);
   const [skeletonColor, setSkeletonColor] = useState<SkeletonColor>("blue");
 
@@ -53,8 +53,6 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
   const calibFramesRef = useRef<Landmark[][]>([]);
   const consecutiveCriticalRef = useRef(0);
   const currentRepErrorsRef = useRef<string[]>([]);
-  const confirmDownRef = useRef(0);
-  const confirmUpRef = useRef(0);
   const repFeedbackActiveRef = useRef(false);
 
   const calibrate = useCallback((landmarks: Landmark[]) => {
@@ -75,12 +73,6 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
       return;
     }
 
-    const kneeYs = frames.map((f) => (f[LANDMARKS.LEFT_KNEE].y + f[LANDMARKS.RIGHT_KNEE].y) / 2);
-    if (Math.max(...kneeYs) - Math.min(...kneeYs) > CALIBRATION_STABILITY_THRESHOLD) {
-      calibFramesRef.current = calibFramesRef.current.slice(-10);
-      return;
-    }
-
     const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
 
     const avgLandmarks = Array.from({ length: 33 }, (_, i) => ({
@@ -93,7 +85,7 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
     const kneeMidY = (avgLandmarks[LANDMARKS.LEFT_KNEE].y + avgLandmarks[LANDMARKS.RIGHT_KNEE].y) / 2;
     const delta = kneeMidY - hipMidY;
 
-    if (delta < 0.02) {
+    if (delta < 0.01) {
       calibFramesRef.current = [];
       return;
     }
@@ -112,8 +104,6 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
     setCtxCalibration(data);
     setStage(AnalysisStage.ACTIVE);
     fsmRef.current = createInitialState();
-    confirmDownRef.current = 0;
-    confirmUpRef.current = 0;
   }, [setCtxCalibration]);
 
   useEffect(() => {
@@ -134,12 +124,15 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
     }
 
     if (stage !== AnalysisStage.ACTIVE || !calibration) return;
-
     if (!landmarksValid(landmarks)) return;
 
-    // Collect all errors for per-rep logging
-    const { errors: allErrors } = runAllChecks(landmarks, calibration);
+    // Run FSM
+    const { newState, repCompleted, depthRatio } = transition(fsmRef.current, landmarks, calibration);
+    fsmRef.current = newState;
+    setPhase(newState.isDown ? "DOWN" : "UP");
 
+    // Collect errors for per-rep logging
+    const { errors: allErrors } = runAllChecks(landmarks, calibration);
     if (allErrors.length > 0) {
       for (const err of allErrors) {
         if (!currentRepErrorsRef.current.includes(err)) {
@@ -148,27 +141,24 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
       }
     }
 
-    // Check live critical errors (valgus, trunk shift)
+    // Check all live errors for skeleton color
+    const valgus = checkKneeValgus(landmarks, calibration);
+    const trunk = checkTrunkShift(landmarks, calibration);
+    const depth = checkDepth(landmarks, calibration);
+
     const liveErrors: string[] = [];
-    const valgusResult = checkKneeValgus(landmarks, calibration);
-    if (!valgusResult.passed) liveErrors.push(valgusResult.message);
-    const trunkResult = checkTrunkShift(landmarks, calibration);
-    if (!trunkResult.passed) liveErrors.push(trunkResult.message);
+    if (!valgus.passed) liveErrors.push(valgus.message);
+    if (!trunk.passed) liveErrors.push(trunk.message);
+    // "Too low" is shown live (dangerous), "Go deeper" only after rep
+    if (!depth.passed && depth.message === "Too low") liveErrors.push(depth.message);
 
-    const hasLiveCritical = liveErrors.length > 0;
+    const hasAnyCritical = liveErrors.length > 0;
 
-    // Determine skeleton color based on depth + errors
-    const depthRatio = getDepthRatio(landmarks, calibration);
-    const currentPhase = fsmRef.current.phase;
-
-    if (hasLiveCritical) {
+    // Skeleton color: red on any live error, green at good depth, blue otherwise
+    if (hasAnyCritical) {
       setSkeletonColor("red");
       setHasLiveError(true);
-    } else if (
-      depthRatio <= DEPTH_SUFFICIENT_RATIO &&
-      depthRatio >= DEPTH_TOO_LOW_RATIO &&
-      (currentPhase === SquatPhase.BOTTOM || currentPhase === SquatPhase.DESCENDING)
-    ) {
+    } else if (depthRatio <= DEPTH_SUFFICIENT_RATIO && depthRatio >= DEPTH_TOO_LOW_RATIO && newState.isDown) {
       setSkeletonColor("green");
       setHasLiveError(false);
     } else {
@@ -176,21 +166,10 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
       setHasLiveError(false);
     }
 
-    // Show live critical errors immediately
-    if (hasLiveCritical && !repFeedbackActiveRef.current) {
+    // Show live errors
+    if (hasAnyCritical && !repFeedbackActiveRef.current) {
       setFeedbackMessages(liveErrors);
     }
-
-    // Run FSM transition
-    const { newState, repCompleted } = transition(
-      fsmRef.current,
-      landmarks,
-      calibration,
-      confirmDownRef,
-      confirmUpRef,
-    );
-    fsmRef.current = newState;
-    setPhase(newState.phase);
 
     if (repCompleted) {
       const errors = [...currentRepErrorsRef.current];
@@ -202,7 +181,6 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
       addRep(repLog);
       setRepCount(newState.repCount);
 
-      // Show rep feedback
       if (errors.length > 0) {
         setFeedbackMessages(errors);
         setHasLiveError(true);
@@ -228,7 +206,7 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
       }
 
       currentRepErrorsRef.current = [];
-    } else if (!hasLiveCritical && !repFeedbackActiveRef.current) {
+    } else if (!hasAnyCritical && !repFeedbackActiveRef.current) {
       setFeedbackMessages([]);
     }
   }, [poseResult, stage, calibration, calibrate, addRep]);
@@ -238,8 +216,6 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
     calibFramesRef.current = [];
     consecutiveCriticalRef.current = 0;
     currentRepErrorsRef.current = [];
-    confirmDownRef.current = 0;
-    confirmUpRef.current = 0;
     repFeedbackActiveRef.current = false;
     setStage(AnalysisStage.WAITING);
     setCalibration(null);

@@ -11,31 +11,31 @@ export const LANDMARKS = {
 } as const;
 
 // --- Visibility ---
-export const MIN_LANDMARK_VISIBILITY = 0.5;
+export const MIN_LANDMARK_VISIBILITY = 0.45;
 
 // --- Calibration ---
-export const CALIBRATION_FRAMES = 30;
-export const CALIBRATION_STABILITY_THRESHOLD = 0.035;
-
-// --- Smoothing ---
-export const SMOOTHING_ALPHA = 0.4;
+export const CALIBRATION_FRAMES = 25;
+export const CALIBRATION_STABILITY_THRESHOLD = 0.04;
 
 // --- Depth thresholds ---
-export const DEPTH_SUFFICIENT_RATIO = 0.6;
-export const DEPTH_TOO_LOW_RATIO = 0.2;
+// Ratio = current hip-knee Y distance / standing hip-knee Y distance
+// Drops below 1.0 as user squats (hips approach knees)
+export const DEPTH_SUFFICIENT_RATIO = 0.65;
+export const DEPTH_TOO_LOW_RATIO = 0.25;
 
-// --- Rep counting hysteresis ---
-export const DESCENT_THRESHOLD_RATIO = 0.80;
-export const ASCENT_THRESHOLD_RATIO = 0.92;
-export const BOTTOM_THRESHOLD_RATIO = 0.65;
-export const MIN_MOVEMENT_THRESHOLD = 0.15;
-export const MIN_REP_INTERVAL_MS = 600;
+// --- Rep counting (simple 2-state: UP / DOWN) ---
+// Go below this ratio → entered "down" state
+export const DOWN_THRESHOLD = 0.85;
+// Go above this ratio → back to "up" state (rep counted)
+export const UP_THRESHOLD = 0.93;
+// Minimum time between reps
+export const MIN_REP_INTERVAL_MS = 500;
 
 // --- Knee valgus ---
 export const VALGUS_RATIO_THRESHOLD = 0.7;
 
 // --- Lateral trunk shift ---
-export const TRUNK_SHIFT_THRESHOLD = 0.04;
+export const TRUNK_SHIFT_THRESHOLD = 0.06;
 
 // --- Stop recommendation ---
 export const CONSECUTIVE_ERROR_REPS_FOR_STOP = 2;
