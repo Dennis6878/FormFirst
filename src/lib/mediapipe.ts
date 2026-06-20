@@ -30,11 +30,3 @@ export async function initPoseLandmarker(): Promise<PoseLandmarker> {
 
   return initPromise;
 }
-
-export function disposePoseLandmarker() {
-  if (landmarkerInstance) {
-    landmarkerInstance.close();
-    landmarkerInstance = null;
-    initPromise = null;
-  }
-}

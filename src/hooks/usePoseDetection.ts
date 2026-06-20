@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
-import { initPoseLandmarker, disposePoseLandmarker, type PoseLandmarkerResult } from "@/lib/mediapipe";
+import { initPoseLandmarker, type PoseLandmarkerResult } from "@/lib/mediapipe";
 import type { PoseLandmarker } from "@mediapipe/tasks-vision";
 
 export function usePoseDetection(videoRef: React.RefObject<HTMLVideoElement | null>, isVideoReady: boolean) {
@@ -27,7 +27,7 @@ export function usePoseDetection(videoRef: React.RefObject<HTMLVideoElement | nu
         const r = landmarker.detectForVideo(video, now);
         setResult(r);
       } catch {
-        // skip frame on detection error
+        // skip frame
       }
     }
 
@@ -35,7 +35,12 @@ export function usePoseDetection(videoRef: React.RefObject<HTMLVideoElement | nu
   }, [videoRef]);
 
   useEffect(() => {
-    if (!isVideoReady) return;
+    if (!isVideoReady) {
+      setIsLoading(true);
+      setResult(null);
+      lastTimeRef.current = -1;
+      return;
+    }
 
     let cancelled = false;
 
@@ -56,12 +61,6 @@ export function usePoseDetection(videoRef: React.RefObject<HTMLVideoElement | nu
       cancelAnimationFrame(rafRef.current);
     };
   }, [isVideoReady, detect]);
-
-  useEffect(() => {
-    return () => {
-      disposePoseLandmarker();
-    };
-  }, []);
 
   return { result, isLoading };
 }
