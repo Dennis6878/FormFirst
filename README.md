@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FormCheck — AI Exercise Form Checker
 
-## Getting Started
+Real-time exercise form analysis using your device camera and AI pose estimation. Currently supports **Squat** analysis with live feedback on depth, knee valgus, and lateral trunk shift.
 
-First, run the development server:
+## Quick Start
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copy `.env.example` to `.env.local` and add your OpenAI API key:
 
-## Learn More
+```bash
+cp .env.example .env.local
+```
 
-To learn more about Next.js, take a look at the following resources:
+The OpenAI key powers the AI coaching feedback on the Workout Summary page. The app works without it — you'll just see a fallback message instead of personalized advice.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+  app/                    # Next.js App Router pages
+    api/feedback/         # OpenAI proxy route
+    analysis/             # Live camera analysis screen
+    exercises/            # Exercise grid + detail pages
+    summary/              # Post-workout summary
+    profile/              # User profile + unlock codes
+    dashboard/            # Physio dashboard (placeholder)
+  components/             # Reusable UI components
+    CameraView.tsx        # Camera + pose overlay (client-only)
+    MobileShell.tsx       # 9:16 app container
+  hooks/                  # Custom React hooks
+    useCamera.ts          # Camera stream lifecycle
+    usePoseDetection.ts   # MediaPipe frame loop
+    useSquatAnalysis.ts   # Orchestrates calibration + analysis
+  lib/
+    mediapipe.ts          # PoseLandmarker initialization
+    squat/
+      constants.ts        # Tunable thresholds
+      formChecks.ts       # Depth, valgus, trunk shift checks
+      stateMachine.ts     # Rep counting FSM
+      types.ts            # TypeScript types
+  context/                # React context providers
+```
 
-## Deploy on Vercel
+## How Squat Analysis Works
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+All analysis is **rule-based geometry** — no ML model training involved. MediaPipe Pose provides 33 body landmarks per frame; downstream logic is threshold comparisons:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Calibration**: User stands still for ~1 second. The app captures baseline hip-to-knee vertical distance and standing joint positions.
+
+2. **Depth detection**: Compares current hip-knee Y delta against the calibrated standing delta. Flags "Go deeper" or "Too low."
+
+3. **Knee valgus**: Compares horizontal distance between knees vs. ankles. If knees collapse inward relative to ankles, flags "Knees caving in."
+
+4. **Lateral trunk shift**: Compares shoulder midpoint X vs. hip midpoint X. Flags asymmetric lean.
+
+5. **Rep counting**: A 4-state machine (STANDING → DESCENDING → BOTTOM → ASCENDING) with hysteresis bands to avoid false counts from noise.
+
+6. **Stop recommendation**: If critical errors (valgus or trunk shift) occur on 2 consecutive reps, warns the user to stop.
+
+All thresholds are in `src/lib/squat/constants.ts` for easy tuning.
+
+## Tech Stack
+
+- **Next.js** (App Router) + TypeScript + Tailwind CSS
+- **MediaPipe Tasks Vision** for client-side pose detection
+- **OpenAI API** (gpt-4o-mini) for post-workout coaching feedback
+- No database — session state lives in React context + sessionStorage
