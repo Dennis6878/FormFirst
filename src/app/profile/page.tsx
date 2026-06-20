@@ -6,14 +6,15 @@ import { useAuth } from "@/context/AuthContext";
 import { useWorkout } from "@/context/WorkoutContext";
 
 export default function ProfilePage() {
-  const { userName, email } = useAuth();
+  const { userName, email, exercisesUnlocked, unlockExercises } = useAuth();
   const { sessionHistory } = useWorkout();
   const [unlockCode, setUnlockCode] = useState("");
 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
     if (unlockCode.trim()) {
-      toast.success("Code Accepted!", { description: "New exercises have been unlocked." });
+      unlockExercises();
+      toast.success("Code Accepted!", { description: "3 new exercises have been unlocked." });
       setUnlockCode("");
     }
   };
@@ -27,7 +28,7 @@ export default function ProfilePage() {
 
       <div className="bg-card border border-card-border rounded-2xl p-5 mb-4">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
             <span className="text-xl font-bold text-primary">
               {(userName || "U")[0].toUpperCase()}
             </span>
@@ -53,21 +54,30 @@ export default function ProfilePage() {
       <div className="bg-card border border-card-border rounded-2xl p-5 mb-4">
         <h3 className="text-sm font-semibold text-foreground mb-1">Physio Unlock Code</h3>
         <p className="text-xs text-muted mb-3">Enter a code from your physiotherapist to unlock prescribed exercises.</p>
-        <form onSubmit={handleUnlock} className="flex gap-2">
-          <input
-            type="text"
-            value={unlockCode}
-            onChange={(e) => setUnlockCode(e.target.value)}
-            placeholder="Enter code"
-            className="flex-1 h-10 px-3 rounded-xl bg-background border border-card-border text-foreground text-sm placeholder:text-muted/50 focus:outline-none focus:border-primary transition-colors"
-          />
-          <button
-            type="submit"
-            className="h-10 px-4 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-light transition-colors active:scale-95"
-          >
-            Unlock
-          </button>
-        </form>
+        {exercisesUnlocked ? (
+          <div className="flex items-center gap-2 text-success">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm font-medium">Exercises unlocked</span>
+          </div>
+        ) : (
+          <form onSubmit={handleUnlock} className="flex gap-2">
+            <input
+              type="text"
+              value={unlockCode}
+              onChange={(e) => setUnlockCode(e.target.value)}
+              placeholder="Enter code"
+              className="flex-1 h-10 px-3 rounded-xl bg-background border border-card-border text-foreground text-sm placeholder:text-muted/50 focus:outline-none focus:border-primary transition-colors"
+            />
+            <button
+              type="submit"
+              className="h-10 px-4 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-light transition-colors active:scale-95"
+            >
+              Unlock
+            </button>
+          </form>
+        )}
       </div>
 
       {sessionHistory.length > 0 && (

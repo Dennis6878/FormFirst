@@ -6,14 +6,17 @@ interface AuthState {
   isLoggedIn: boolean;
   userName: string;
   email: string;
+  exercisesUnlocked: boolean;
   login: (name: string, email: string) => void;
   logout: () => void;
+  unlockExercises: () => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [exercisesUnlocked, setExercisesUnlocked] = useState(false);
 
   const login = useCallback((name: string, email: string) => {
     setUser({ name, email });
@@ -23,14 +26,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const unlockExercises = useCallback(() => {
+    setExercisesUnlocked(true);
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
         isLoggedIn: !!user,
         userName: user?.name ?? "",
         email: user?.email ?? "",
+        exercisesUnlocked,
         login,
         logout,
+        unlockExercises,
       }}
     >
       {children}

@@ -20,7 +20,7 @@ export default function LoginPage() {
     <div className="flex flex-col h-full px-8 pt-20 pb-8 bg-background">
       <div className="flex-1 flex flex-col justify-center">
         <div className="mb-12">
-          <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center mb-6">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
             <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -31,23 +31,23 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm font-medium text-muted mb-1.5">Name</label>
+            <label className="block text-sm font-medium text-foreground mb-1.5">Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your name"
-              className="w-full h-12 px-4 rounded-xl bg-card border border-card-border text-foreground placeholder:text-muted/50 focus:outline-none focus:border-primary transition-colors"
+              className="w-full h-12 px-4 rounded-xl bg-card border border-card-border text-foreground placeholder:text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-muted mb-1.5">Email</label>
+            <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
-              className="w-full h-12 px-4 rounded-xl bg-card border border-card-border text-foreground placeholder:text-muted/50 focus:outline-none focus:border-primary transition-colors"
+              className="w-full h-12 px-4 rounded-xl bg-card border border-card-border text-foreground placeholder:text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
             />
           </div>
           <button

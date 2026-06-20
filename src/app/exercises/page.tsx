@@ -1,8 +1,9 @@
 "use client";
 
 import ExerciseCard from "@/components/ExerciseCard";
+import { useAuth } from "@/context/AuthContext";
 
-const EXERCISES = [
+const BASE_EXERCISES = [
   {
     title: "Mobility Analysis",
     icon: "🧘",
@@ -43,7 +44,34 @@ const EXERCISES = [
   },
 ];
 
+const UNLOCKED_EXERCISES = [
+  {
+    title: "Deadlift",
+    icon: "🏗️",
+    image: "https://images.unsplash.com/photo-1534368786749-b63e05c92717?w=400&q=80",
+    difficulty: "Advanced",
+  },
+  {
+    title: "Hip Thrust",
+    icon: "🍑",
+    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=400&q=80",
+    difficulty: "Intermediate",
+  },
+  {
+    title: "Bulgarian Split Squat",
+    icon: "🦿",
+    image: "https://images.unsplash.com/photo-1434608519344-49d77a699e1d?w=400&q=80",
+    difficulty: "Advanced",
+  },
+];
+
 export default function ExercisesPage() {
+  const { exercisesUnlocked } = useAuth();
+
+  const exercises = exercisesUnlocked
+    ? [...BASE_EXERCISES, ...UNLOCKED_EXERCISES]
+    : BASE_EXERCISES;
+
   return (
     <div className="flex flex-col h-full px-5 pt-14 pb-4">
       <div className="mb-6">
@@ -51,7 +79,7 @@ export default function ExercisesPage() {
         <p className="text-sm text-muted mt-1">Choose an exercise to analyze your form</p>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        {EXERCISES.map((ex) => (
+        {exercises.map((ex) => (
           <ExerciseCard key={ex.title} {...ex} />
         ))}
       </div>

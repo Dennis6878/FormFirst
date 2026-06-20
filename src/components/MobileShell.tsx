@@ -15,8 +15,8 @@ export default function MobileShell({ children }: { children: React.ReactNode })
   const showNav = !HIDE_NAV_ROUTES.includes(pathname);
 
   return (
-    <div className="flex items-center justify-center w-full h-dvh bg-black">
-      <div className="relative w-[390px] h-[844px] max-h-dvh bg-background rounded-3xl overflow-hidden shadow-2xl shadow-primary/10 border border-card-border flex flex-col">
+    <div className="flex items-center justify-center w-full h-dvh bg-gray-200">
+      <div className="relative w-[390px] h-[844px] max-h-dvh bg-background rounded-3xl overflow-hidden shadow-2xl shadow-black/10 border border-card-border flex flex-col">
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
           {children}
         </div>
