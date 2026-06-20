@@ -1,10 +1,4 @@
-import {
-  LANDMARKS,
-  DOWN_THRESHOLD,
-  UP_THRESHOLD,
-  MIN_REP_INTERVAL_MS,
-  MIN_LANDMARK_VISIBILITY,
-} from "./constants";
+import { LANDMARKS, DOWN_THRESHOLD, UP_THRESHOLD, MIN_REP_INTERVAL_MS, MIN_VISIBILITY } from "./constants";
 import type { CalibrationData } from "./types";
 
 interface Landmark {
@@ -23,78 +17,46 @@ export interface StateMachineState {
 }
 
 export function createInitialState(): StateMachineState {
-  return {
-    isDown: false,
-    repCount: 0,
-    lastRepTime: 0,
-    framesSinceCalibration: 0,
-    hasBeenDown: false,
-  };
+  return { isDown: false, repCount: 0, lastRepTime: 0, framesSinceCalibration: 0, hasBeenDown: false };
 }
 
-export function getDepthRatio(landmarks: Landmark[], calibration: CalibrationData): number {
-  const leftHip = landmarks[LANDMARKS.LEFT_HIP];
-  const rightHip = landmarks[LANDMARKS.RIGHT_HIP];
-  const leftKnee = landmarks[LANDMARKS.LEFT_KNEE];
-  const rightKnee = landmarks[LANDMARKS.RIGHT_KNEE];
-
-  const hipMidY = (leftHip.y + rightHip.y) / 2;
-  const kneeMidY = (leftKnee.y + rightKnee.y) / 2;
-  const currentDelta = kneeMidY - hipMidY;
-
-  return currentDelta / calibration.standingHipKneeDelta;
+function visible(landmarks: Landmark[]): boolean {
+  return [LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP, LANDMARKS.LEFT_KNEE, LANDMARKS.RIGHT_KNEE]
+    .every((i) => (landmarks[i].visibility ?? 0) >= MIN_VISIBILITY);
 }
 
-function areLandmarksVisible(landmarks: Landmark[]): boolean {
-  const required = [LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP, LANDMARKS.LEFT_KNEE, LANDMARKS.RIGHT_KNEE];
-  return required.every((idx) => (landmarks[idx].visibility ?? 0) >= MIN_LANDMARK_VISIBILITY);
+function depthRatio(landmarks: Landmark[], cal: CalibrationData): number {
+  const hipY = (landmarks[LANDMARKS.LEFT_HIP].y + landmarks[LANDMARKS.RIGHT_HIP].y) / 2;
+  const kneeY = (landmarks[LANDMARKS.LEFT_KNEE].y + landmarks[LANDMARKS.RIGHT_KNEE].y) / 2;
+  return (kneeY - hipY) / cal.standingHipKneeDelta;
 }
 
 export interface TransitionResult {
   newState: StateMachineState;
   repCompleted: boolean;
-  depthRatio: number;
 }
 
-export function transition(
-  state: StateMachineState,
-  landmarks: Landmark[],
-  calibration: CalibrationData,
-): TransitionResult {
-  const noChange = { newState: state, repCompleted: false, depthRatio: 1 };
+export function transition(state: StateMachineState, landmarks: Landmark[], cal: CalibrationData): TransitionResult {
+  if (!visible(landmarks)) return { newState: state, repCompleted: false };
 
-  if (!areLandmarksVisible(landmarks)) return noChange;
+  const ratio = depthRatio(landmarks, cal);
+  const newState = { ...state, framesSinceCalibration: state.framesSinceCalibration + 1 };
 
-  const ratio = getDepthRatio(landmarks, calibration);
-
-  const newState: StateMachineState = {
-    ...state,
-    framesSinceCalibration: state.framesSinceCalibration + 1,
-  };
-
-  // Ignore first few frames after calibration
-  if (newState.framesSinceCalibration < 8) {
-    return { newState, repCompleted: false, depthRatio: ratio };
-  }
+  if (newState.framesSinceCalibration < 8) return { newState, repCompleted: false };
 
   let repCompleted = false;
-  const now = Date.now();
 
   if (!state.isDown && ratio < DOWN_THRESHOLD) {
-    // User went down
     newState.isDown = true;
     newState.hasBeenDown = true;
   } else if (state.isDown && ratio > UP_THRESHOLD) {
-    // User came back up
     newState.isDown = false;
-    const timeSinceLastRep = now - state.lastRepTime;
-
-    if (state.hasBeenDown && timeSinceLastRep > MIN_REP_INTERVAL_MS) {
+    if (state.hasBeenDown && Date.now() - state.lastRepTime > MIN_REP_INTERVAL_MS) {
       newState.repCount = state.repCount + 1;
-      newState.lastRepTime = now;
+      newState.lastRepTime = Date.now();
       repCompleted = true;
     }
   }
 
-  return { newState, repCompleted, depthRatio: ratio };
+  return { newState, repCompleted };
 }

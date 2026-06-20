@@ -13,25 +13,13 @@ export interface SessionSummary {
 }
 
 export interface CalibrationData {
-  standingHipY: number;
-  standingKneeY: number;
   standingHipKneeDelta: number;
-  standingKneeDistance: number;
-  standingAnkleDistance: number;
   standingShoulderMidX: number;
   standingHipMidX: number;
-}
-
-export enum SquatPhase {
-  STANDING = "STANDING",
-  DESCENDING = "DESCENDING",
-  BOTTOM = "BOTTOM",
-  ASCENDING = "ASCENDING",
 }
 
 export enum AnalysisStage {
   WAITING = "WAITING",
   CALIBRATING = "CALIBRATING",
   ACTIVE = "ACTIVE",
-  STOPPED = "STOPPED",
 }

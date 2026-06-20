@@ -5,17 +5,15 @@ import { CheckCircle2, AlertTriangle } from "lucide-react";
 interface RepCounterProps {
   repCount: number;
   feedbackMessages: string[];
-  phase: string;
-  hasError: boolean;
 }
 
-export default function RepCounter({ repCount, feedbackMessages, hasError }: RepCounterProps) {
+export default function RepCounter({ repCount, feedbackMessages }: RepCounterProps) {
   const isGood = feedbackMessages.length === 1 && feedbackMessages[0] === "Good rep!";
   const hasMessages = feedbackMessages.length > 0;
 
   return (
     <>
-      {/* Rep counter - top left */}
+      {/* Rep counter */}
       <div className="absolute top-5 left-4 pointer-events-none">
         <div className="bg-black/50 backdrop-blur-xl rounded-2xl px-5 py-3 text-center">
           <div className="text-[40px] font-bold text-white tabular-nums leading-none">{repCount}</div>
@@ -23,7 +21,7 @@ export default function RepCounter({ repCount, feedbackMessages, hasError }: Rep
         </div>
       </div>
 
-      {/* Feedback overlay - center of screen */}
+      {/* Feedback overlay */}
       {hasMessages && (
         <div className="absolute inset-x-0 top-[35%] flex justify-center pointer-events-none px-8">
           <div
@@ -46,9 +44,7 @@ export default function RepCounter({ repCount, feedbackMessages, hasError }: Rep
               </div>
             ))}
             {!isGood && (
-              <div className="text-white/60 text-[11px] mt-1.5 font-medium">
-                Fix on next rep
-              </div>
+              <div className="text-white/60 text-[11px] mt-1.5 font-medium">Fix on next rep</div>
             )}
           </div>
         </div>

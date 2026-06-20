@@ -8,7 +8,7 @@ import { drawPoseOverlay } from "@/components/PoseOverlay";
 import RepCounter from "@/components/RepCounter";
 import AudioToggle from "@/components/AudioToggle";
 import { AnalysisStage } from "@/lib/squat/types";
-import { Camera, Square, X, AlertOctagon } from "lucide-react";
+import { Camera, Square, AlertOctagon } from "lucide-react";
 
 interface CameraViewProps {
   onEnd: (recordedVideoUrl: string | null) => void;
@@ -22,34 +22,22 @@ export default function CameraView({ onEnd }: CameraViewProps) {
   const [stopDismissed, setStopDismissed] = useState(false);
   const { videoRef, isReady, error, start, stop } = useCamera();
   const { result, isLoading } = usePoseDetection(videoRef, isReady);
-  const { stage, repCount, feedbackMessages, shouldStop, phase, hasLiveError, skeletonColor } = useSquatAnalysis(result);
+  const { stage, repCount, feedbackMessages, shouldStop, skeletonColor } = useSquatAnalysis(result);
 
-  useEffect(() => {
-    start();
-    return () => stop();
-  }, [start, stop]);
-
-  // Reset dismissal if shouldStop goes false then true again
-  useEffect(() => {
-    if (shouldStop) setStopDismissed(false);
-  }, [shouldStop]);
+  useEffect(() => { start(); return () => stop(); }, [start, stop]);
+  useEffect(() => { if (shouldStop) setStopDismissed(false); }, [shouldStop]);
 
   useEffect(() => {
     if (stage !== AnalysisStage.ACTIVE) return;
-    const composite = compositeCanvasRef.current;
-    if (!composite || mediaRecorderRef.current) return;
-
+    const c = compositeCanvasRef.current;
+    if (!c || mediaRecorderRef.current) return;
     try {
-      const stream = composite.captureStream(24);
-      const recorder = new MediaRecorder(stream, { mimeType: "video/webm; codecs=vp9" });
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-      recorder.start(500);
-      mediaRecorderRef.current = recorder;
-    } catch {
-      // fallback
-    }
+      const s = c.captureStream(24);
+      const r = new MediaRecorder(s, { mimeType: "video/webm; codecs=vp9" });
+      r.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      r.start(500);
+      mediaRecorderRef.current = r;
+    } catch { /* not supported */ }
   }, [stage]);
 
   const drawOverlay = useCallback(() => {
@@ -59,77 +47,54 @@ export default function CameraView({ onEnd }: CameraViewProps) {
     if (!canvas || !composite || !video) return;
 
     const ctx = canvas.getContext("2d");
-    const compCtx = composite.getContext("2d");
-    if (!ctx || !compCtx) return;
+    const cctx = composite.getContext("2d");
+    if (!ctx || !cctx) return;
 
     const vw = video.videoWidth || 640;
     const vh = video.videoHeight || 480;
-    canvas.width = vw;
-    canvas.height = vh;
-    composite.width = vw;
-    composite.height = vh;
+    canvas.width = vw; canvas.height = vh;
+    composite.width = vw; composite.height = vh;
 
     if (result?.landmarks?.[0]) {
-      drawPoseOverlay({
-        landmarks: result.landmarks[0],
-        width: vw,
-        height: vh,
-        ctx,
-        color: skeletonColor,
-      });
+      drawPoseOverlay({ landmarks: result.landmarks[0], width: vw, height: vh, ctx, color: skeletonColor });
     } else {
       ctx.clearRect(0, 0, vw, vh);
     }
 
-    compCtx.save();
-    compCtx.translate(vw, 0);
-    compCtx.scale(-1, 1);
-    compCtx.drawImage(video, 0, 0, vw, vh);
-    compCtx.restore();
-    compCtx.save();
-    compCtx.translate(vw, 0);
-    compCtx.scale(-1, 1);
-    compCtx.drawImage(canvas, 0, 0, vw, vh);
-    compCtx.restore();
+    // Composite for recording
+    cctx.save(); cctx.translate(vw, 0); cctx.scale(-1, 1);
+    cctx.drawImage(video, 0, 0, vw, vh); cctx.restore();
+    cctx.save(); cctx.translate(vw, 0); cctx.scale(-1, 1);
+    cctx.drawImage(canvas, 0, 0, vw, vh); cctx.restore();
 
     if (feedbackMessages.length > 0) {
-      compCtx.font = "bold 20px sans-serif";
-      compCtx.textAlign = "center";
+      cctx.font = "bold 20px sans-serif";
+      cctx.textAlign = "center";
       feedbackMessages.forEach((msg, i) => {
         const y = 50 + i * 32;
-        compCtx.fillStyle = "rgba(0,0,0,0.6)";
-        const tw = compCtx.measureText(msg).width;
-        compCtx.fillRect(vw / 2 - tw / 2 - 12, y - 18, tw + 24, 28);
-        compCtx.fillStyle = skeletonColor === "red" ? "#ef4444" : skeletonColor === "green" ? "#22c55e" : "#3b82f6";
-        compCtx.fillText(msg, vw / 2, y);
+        const tw = cctx.measureText(msg).width;
+        cctx.fillStyle = "rgba(0,0,0,0.6)";
+        cctx.fillRect(vw / 2 - tw / 2 - 12, y - 18, tw + 24, 28);
+        cctx.fillStyle = msg === "Good rep!" ? "#22c55e" : "#ef4444";
+        cctx.fillText(msg, vw / 2, y);
       });
     }
 
     if (stage === AnalysisStage.ACTIVE) {
-      compCtx.font = "bold 28px sans-serif";
-      compCtx.textAlign = "left";
-      compCtx.fillStyle = "rgba(0,0,0,0.6)";
-      compCtx.fillRect(10, vh - 50, 100, 40);
-      compCtx.fillStyle = "#ffffff";
-      compCtx.fillText(`Rep ${repCount}`, 20, vh - 20);
+      cctx.font = "bold 28px sans-serif"; cctx.textAlign = "left";
+      cctx.fillStyle = "rgba(0,0,0,0.6)"; cctx.fillRect(10, vh - 50, 100, 40);
+      cctx.fillStyle = "#ffffff"; cctx.fillText(`Rep ${repCount}`, 20, vh - 20);
     }
-  }, [result, feedbackMessages, hasLiveError, videoRef, stage, repCount]);
+  }, [result, feedbackMessages, skeletonColor, videoRef, stage, repCount]);
 
-  useEffect(() => {
-    drawOverlay();
-  }, [drawOverlay]);
+  useEffect(() => { drawOverlay(); }, [drawOverlay]);
 
   const handleEnd = () => {
     stop();
-
-    const recorder = mediaRecorderRef.current;
-    if (recorder && recorder.state !== "inactive") {
-      recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "video/webm" });
-        const url = URL.createObjectURL(blob);
-        onEnd(url);
-      };
-      recorder.stop();
+    const r = mediaRecorderRef.current;
+    if (r && r.state !== "inactive") {
+      r.onstop = () => onEnd(URL.createObjectURL(new Blob(chunksRef.current, { type: "video/webm" })));
+      r.stop();
     } else {
       onEnd(null);
     }
@@ -143,28 +108,17 @@ export default function CameraView({ onEnd }: CameraViewProps) {
         </div>
         <p className="text-foreground font-semibold text-[16px] mb-1">Camera Access Required</p>
         <p className="text-[13px] text-muted mb-6 leading-relaxed max-w-[260px]">{error}</p>
-        <button onClick={() => onEnd(null)} className="h-10 px-6 rounded-lg bg-foreground text-white text-[13px] font-medium">
-          Go Back
-        </button>
+        <button onClick={() => onEnd(null)} className="h-10 px-6 rounded-lg bg-foreground text-white text-[13px] font-medium">Go Back</button>
       </div>
     );
   }
 
   return (
     <div className="relative w-full h-full bg-black">
-      <video
-        ref={videoRef}
-        className="absolute inset-0 w-full h-full object-cover -scale-x-100"
-        playsInline
-        muted
-      />
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full object-cover -scale-x-100"
-      />
+      <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover -scale-x-100" playsInline muted />
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover -scale-x-100" />
       <canvas ref={compositeCanvasRef} className="hidden" />
 
-      {/* Loading */}
       {(isLoading || !isReady) && (
         <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
           <div className="text-center">
@@ -175,7 +129,6 @@ export default function CameraView({ onEnd }: CameraViewProps) {
         </div>
       )}
 
-      {/* Calibrating */}
       {stage === AnalysisStage.CALIBRATING && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="bg-black/70 backdrop-blur-xl rounded-2xl px-8 py-7 text-center mx-8">
@@ -186,33 +139,25 @@ export default function CameraView({ onEnd }: CameraViewProps) {
         </div>
       )}
 
-      {/* Active overlay */}
       {stage === AnalysisStage.ACTIVE && (
-        <RepCounter repCount={repCount} feedbackMessages={feedbackMessages} phase={phase} hasError={hasLiveError} />
+        <RepCounter repCount={repCount} feedbackMessages={feedbackMessages} />
       )}
 
-      {/* Stop warning — dismissible */}
       {shouldStop && !stopDismissed && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-20">
           <div className="bg-zinc-900 rounded-3xl mx-6 p-6 text-center shadow-2xl border border-red-500/30 max-w-[320px]">
             <div className="w-14 h-14 rounded-full bg-red-500/15 flex items-center justify-center mx-auto mb-4">
               <AlertOctagon className="w-7 h-7 text-red-500" />
             </div>
-            <h3 className="text-white font-bold text-[18px] mb-1.5">Form Breaking Down</h3>
+            <h3 className="text-white font-bold text-[18px] mb-1.5">Balance Issues Detected</h3>
             <p className="text-zinc-400 text-[13px] leading-relaxed mb-5">
-              Multiple reps with critical form errors detected. Continuing may increase injury risk.
+              You&apos;ve been leaning to one side for multiple reps. Continuing may increase injury risk.
             </p>
             <div className="flex flex-col gap-2">
-              <button
-                onClick={handleEnd}
-                className="w-full h-11 rounded-xl bg-red-500 text-white font-semibold text-[14px] active:scale-[0.98] transition-transform"
-              >
+              <button onClick={handleEnd} className="w-full h-11 rounded-xl bg-red-500 text-white font-semibold text-[14px] active:scale-[0.98]">
                 End Workout
               </button>
-              <button
-                onClick={() => setStopDismissed(true)}
-                className="w-full h-11 rounded-xl bg-white/10 text-white/70 font-medium text-[13px] active:scale-[0.98] transition-transform"
-              >
+              <button onClick={() => setStopDismissed(true)} className="w-full h-11 rounded-xl bg-white/10 text-white/70 font-medium text-[13px] active:scale-[0.98]">
                 Continue Anyway
               </button>
             </div>
@@ -220,14 +165,10 @@ export default function CameraView({ onEnd }: CameraViewProps) {
         </div>
       )}
 
-      {/* Bottom controls */}
       <div className="absolute bottom-0 left-0 right-0 pb-10 pt-20 bg-gradient-to-t from-black/70 to-transparent z-10">
         <div className="flex items-center justify-center gap-4 px-6">
           <AudioToggle feedbackMessages={feedbackMessages} repCount={repCount} />
-          <button
-            onClick={handleEnd}
-            className="h-11 px-7 rounded-full bg-white text-zinc-900 font-semibold text-[13px] flex items-center gap-2 shadow-lg active:scale-95 transition-transform"
-          >
+          <button onClick={handleEnd} className="h-11 px-7 rounded-full bg-white text-zinc-900 font-semibold text-[13px] flex items-center gap-2 shadow-lg active:scale-95 transition-transform">
             <Square className="w-3.5 h-3.5" fill="currentColor" />
             End Workout
           </button>
