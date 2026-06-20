@@ -12,20 +12,20 @@ interface PoseOverlayProps {
   width: number;
   height: number;
   ctx: CanvasRenderingContext2D;
-  errors: string[];
+  hasError: boolean;
 }
 
 const KEY_LANDMARKS = new Set<number>(Object.values(LANDMARKS));
 
-export function drawPoseOverlay({ landmarks, width, height, ctx, errors }: PoseOverlayProps) {
+export function drawPoseOverlay({ landmarks, width, height, ctx, hasError }: PoseOverlayProps) {
   ctx.clearRect(0, 0, width, height);
 
-  const hasError = errors.length > 0;
-  const connectionColor = hasError ? "rgba(239, 68, 68, 0.6)" : "rgba(99, 102, 241, 0.6)";
-  const dotColor = hasError ? "#ef4444" : "#6366f1";
-  const keyDotColor = hasError ? "#fbbf24" : "#22d3ee";
+  // Green when form is good, red when there's an error
+  const connectionColor = hasError ? "rgba(239, 68, 68, 0.7)" : "rgba(34, 197, 94, 0.7)";
+  const dotColor = hasError ? "rgba(252, 165, 165, 0.9)" : "rgba(134, 239, 172, 0.9)";
+  const keyDotColor = hasError ? "#fca5a5" : "#86efac";
+  const keyDotStroke = hasError ? "rgba(239, 68, 68, 0.5)" : "rgba(34, 197, 94, 0.5)";
 
-  // Draw connections
   ctx.strokeStyle = connectionColor;
   ctx.lineWidth = 3;
   for (const [startIdx, endIdx] of POSE_CONNECTIONS) {
@@ -40,7 +40,6 @@ export function drawPoseOverlay({ landmarks, width, height, ctx, errors }: PoseO
     ctx.stroke();
   }
 
-  // Draw landmarks
   for (let i = 0; i < landmarks.length; i++) {
     const lm = landmarks[i];
     if ((lm.visibility ?? 0) < 0.5) continue;
@@ -55,8 +54,8 @@ export function drawPoseOverlay({ landmarks, width, height, ctx, errors }: PoseO
     ctx.fill();
 
     if (isKey) {
-      ctx.strokeStyle = "rgba(0,0,0,0.3)";
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = keyDotStroke;
+      ctx.lineWidth = 2;
       ctx.stroke();
     }
   }

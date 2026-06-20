@@ -11,7 +11,7 @@ import {
   MIN_LANDMARK_VISIBILITY,
 } from "@/lib/squat/constants";
 import { createInitialState, transition, type StateMachineState } from "@/lib/squat/stateMachine";
-import { runAllChecks } from "@/lib/squat/formChecks";
+import { checkKneeValgus, checkTrunkShift, runAllChecks } from "@/lib/squat/formChecks";
 import { useWorkout } from "@/context/WorkoutContext";
 
 interface Landmark {
@@ -31,6 +31,8 @@ function landmarksValid(landmarks: Landmark[]): boolean {
   return required.every((idx) => (landmarks[idx]?.visibility ?? 0) >= MIN_LANDMARK_VISIBILITY);
 }
 
+const REP_FEEDBACK_DISPLAY_MS = 2500;
+
 export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
   const { addRep, setCalibration: setCtxCalibration } = useWorkout();
 
@@ -40,6 +42,7 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
   const [feedbackMessages, setFeedbackMessages] = useState<string[]>([]);
   const [shouldStop, setShouldStop] = useState(false);
   const [phase, setPhase] = useState("STANDING");
+  const [hasLiveError, setHasLiveError] = useState(false);
 
   const fsmRef = useRef<StateMachineState>(createInitialState());
   const calibFramesRef = useRef<Landmark[][]>([]);
@@ -47,6 +50,7 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
   const currentRepErrorsRef = useRef<string[]>([]);
   const confirmDownRef = useRef(0);
   const confirmUpRef = useRef(0);
+  const repFeedbackTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const calibrate = useCallback((landmarks: Landmark[]) => {
     if (!landmarksValid(landmarks)) {
@@ -60,18 +64,15 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
 
     const frames = calibFramesRef.current;
 
-    // Check stability: hip Y should not vary much
     const hipYs = frames.map((f) => (f[LANDMARKS.LEFT_HIP].y + f[LANDMARKS.RIGHT_HIP].y) / 2);
     const minY = Math.min(...hipYs);
     const maxY = Math.max(...hipYs);
 
     if (maxY - minY > CALIBRATION_STABILITY_THRESHOLD) {
-      // Still moving — keep most recent frames and try again
       calibFramesRef.current = calibFramesRef.current.slice(-15);
       return;
     }
 
-    // Also check knee stability
     const kneeYs = frames.map((f) => (f[LANDMARKS.LEFT_KNEE].y + f[LANDMARKS.RIGHT_KNEE].y) / 2);
     const kneeRange = Math.max(...kneeYs) - Math.min(...kneeYs);
     if (kneeRange > CALIBRATION_STABILITY_THRESHOLD) {
@@ -91,7 +92,6 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
     const kneeMidY = (avgLandmarks[LANDMARKS.LEFT_KNEE].y + avgLandmarks[LANDMARKS.RIGHT_KNEE].y) / 2;
     const delta = kneeMidY - hipMidY;
 
-    // Sanity check: hip should be above knee (lower Y in normalized coords)
     if (delta < 0.02) {
       calibFramesRef.current = [];
       return;
@@ -134,23 +134,40 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
 
     if (stage !== AnalysisStage.ACTIVE || !calibration) return;
 
-    // Skip frame if key landmarks aren't visible
     if (!landmarksValid(landmarks)) {
-      setFeedbackMessages([]);
       return;
     }
 
-    const { errors } = runAllChecks(landmarks, calibration);
+    // Collect all errors for per-rep logging
+    const { errors: allErrors } = runAllChecks(landmarks, calibration);
 
-    if (errors.length > 0) {
-      for (const err of errors) {
+    if (allErrors.length > 0) {
+      for (const err of allErrors) {
         if (!currentRepErrorsRef.current.includes(err)) {
           currentRepErrorsRef.current.push(err);
         }
       }
     }
 
-    setFeedbackMessages(errors);
+    // Only show critical errors (valgus, trunk shift) live — NOT depth
+    const liveErrors: string[] = [];
+    const valgusResult = checkKneeValgus(landmarks, calibration);
+    if (!valgusResult.passed) liveErrors.push(valgusResult.message);
+    const trunkResult = checkTrunkShift(landmarks, calibration);
+    if (!trunkResult.passed) liveErrors.push(trunkResult.message);
+
+    if (liveErrors.length > 0) {
+      setHasLiveError(true);
+    } else {
+      setHasLiveError(false);
+    }
+
+    // Only update feedback display if there are live critical errors
+    // (depth feedback is shown only after rep completes via timer)
+    if (liveErrors.length > 0) {
+      setFeedbackMessages(liveErrors);
+      clearTimeout(repFeedbackTimerRef.current);
+    }
 
     const { newState, repCompleted } = transition(
       fsmRef.current,
@@ -163,15 +180,30 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
     setPhase(newState.phase);
 
     if (repCompleted) {
+      const errors = [...currentRepErrorsRef.current];
       const repLog: RepLog = {
         repNumber: newState.repCount,
-        errors: [...currentRepErrorsRef.current],
+        errors,
         timestamp: Date.now(),
       };
       addRep(repLog);
       setRepCount(newState.repCount);
 
-      if (currentRepErrorsRef.current.some((e) => e === "Knees caving in" || e === "Shift weight to center")) {
+      // Show all errors from this rep as feedback for a few seconds
+      if (errors.length > 0) {
+        setFeedbackMessages(errors);
+        setHasLiveError(true);
+      } else {
+        setFeedbackMessages(["Good rep!"]);
+        setHasLiveError(false);
+      }
+      clearTimeout(repFeedbackTimerRef.current);
+      repFeedbackTimerRef.current = setTimeout(() => {
+        setFeedbackMessages([]);
+        setHasLiveError(false);
+      }, REP_FEEDBACK_DISPLAY_MS);
+
+      if (errors.some((e) => e === "Knees caving in" || e === "Shift weight to center")) {
         consecutiveCriticalRef.current += 1;
       } else {
         consecutiveCriticalRef.current = 0;
@@ -182,6 +214,12 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
       }
 
       currentRepErrorsRef.current = [];
+    } else if (liveErrors.length === 0) {
+      // No live errors and no rep just completed — clear stale messages
+      // (but don't clear if a rep feedback timer is active)
+      if (!repFeedbackTimerRef.current) {
+        setFeedbackMessages([]);
+      }
     }
   }, [poseResult, stage, calibration, calibrate, addRep]);
 
@@ -192,11 +230,13 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
     currentRepErrorsRef.current = [];
     confirmDownRef.current = 0;
     confirmUpRef.current = 0;
+    clearTimeout(repFeedbackTimerRef.current);
     setStage(AnalysisStage.WAITING);
     setCalibration(null);
     setRepCount(0);
     setFeedbackMessages([]);
     setShouldStop(false);
+    setHasLiveError(false);
   }, []);
 
   return {
@@ -205,6 +245,7 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
     feedbackMessages,
     shouldStop,
     phase,
+    hasLiveError,
     reset,
   };
 }

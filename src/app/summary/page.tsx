@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkout } from "@/context/WorkoutContext";
-import { CheckCircle2, AlertTriangle, Sparkles, ArrowRight } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Sparkles, ArrowRight, Play } from "lucide-react";
 
 export default function SummaryPage() {
   const router = useRouter();
-  const { repLogs, currentExercise, clearCurrentSession } = useWorkout();
+  const { repLogs, currentExercise, clearCurrentSession, recordedVideoUrl } = useWorkout();
   const [aiFeedback, setAiFeedback] = useState<string | null>(null);
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
 
@@ -60,7 +60,7 @@ export default function SummaryPage() {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Header with score */}
+      {/* Header */}
       <div className="bg-foreground text-white px-5 pt-16 pb-6 rounded-b-[2rem]">
         <p className="text-zinc-400 text-[13px] mb-1 capitalize">{currentExercise} Session</p>
         <h1 className="text-[24px] font-bold tracking-tight mb-5">Workout Complete</h1>
@@ -81,6 +81,21 @@ export default function SummaryPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 pt-5 pb-4">
+        {/* Video review */}
+        {recordedVideoUrl && (
+          <div className="mb-5">
+            <h2 className="text-[12px] font-semibold text-muted uppercase tracking-wider mb-2.5">Video Review</h2>
+            <div className="bg-surface border border-border rounded-xl overflow-hidden">
+              <video
+                src={recordedVideoUrl}
+                controls
+                playsInline
+                className="w-full aspect-[3/4] bg-black object-contain"
+              />
+            </div>
+          </div>
+        )}
+
         {/* Rep breakdown */}
         <div className="mb-5">
           <h2 className="text-[12px] font-semibold text-muted uppercase tracking-wider mb-2.5">Rep Breakdown</h2>

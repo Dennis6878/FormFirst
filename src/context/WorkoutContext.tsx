@@ -8,12 +8,14 @@ interface WorkoutState {
   calibrationData: CalibrationData | null;
   sessionHistory: SessionSummary[];
   currentExercise: string | null;
+  recordedVideoUrl: string | null;
   addRep: (log: RepLog) => void;
   setCalibration: (data: CalibrationData) => void;
   startSession: (exercise: string) => void;
   endSession: () => SessionSummary | null;
   clearCurrentSession: () => void;
   getLastSession: (exercise: string) => SessionSummary | undefined;
+  setRecordedVideo: (url: string | null) => void;
 }
 
 const WorkoutContext = createContext<WorkoutState | null>(null);
@@ -41,6 +43,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   const [calibrationData, setCalibrationData] = useState<CalibrationData | null>(null);
   const [currentExercise, setCurrentExercise] = useState<string | null>(null);
   const [sessionHistory, setSessionHistory] = useState<SessionSummary[]>([]);
+  const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -67,7 +70,11 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     setCurrentExercise(exercise);
     setRepLogs([]);
     setCalibrationData(null);
-  }, []);
+    if (recordedVideoUrl) {
+      URL.revokeObjectURL(recordedVideoUrl);
+    }
+    setRecordedVideoUrl(null);
+  }, [recordedVideoUrl]);
 
   const endSession = useCallback((): SessionSummary | null => {
     if (!currentExercise || repLogs.length === 0) return null;
@@ -86,7 +93,11 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     setRepLogs([]);
     setCalibrationData(null);
     setCurrentExercise(null);
-  }, []);
+    if (recordedVideoUrl) {
+      URL.revokeObjectURL(recordedVideoUrl);
+    }
+    setRecordedVideoUrl(null);
+  }, [recordedVideoUrl]);
 
   const getLastSession = useCallback(
     (exercise: string) => {
@@ -95,6 +106,10 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     [sessionHistory]
   );
 
+  const setRecordedVideo = useCallback((url: string | null) => {
+    setRecordedVideoUrl(url);
+  }, []);
+
   return (
     <WorkoutContext.Provider
       value={{
@@ -102,12 +117,14 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
         calibrationData,
         sessionHistory,
         currentExercise,
+        recordedVideoUrl,
         addRep,
         setCalibration,
         startSession,
         endSession,
         clearCurrentSession,
         getLastSession,
+        setRecordedVideo,
       }}
     >
       {children}
