@@ -6,37 +6,39 @@ const EXERCISES = [
   {
     title: "Mobility Analysis",
     icon: "🧘",
-    comingSoon: true,
     fullWidth: true,
-    accentColor: "bg-accent/15 text-accent",
+    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80",
     difficulty: "Full Body",
   },
   {
     title: "Squat",
     icon: "🏋️",
     href: "/exercises/squat",
+    image: "https://images.unsplash.com/photo-1566241142559-40e1dab266c6?w=400&q=80",
     difficulty: "Beginner",
   },
   {
     title: "Push-up",
     icon: "💪",
+    image: "https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=400&q=80",
     difficulty: "Beginner",
   },
   {
     title: "Lunge",
     icon: "🦵",
-    locked: true,
+    image: "https://images.unsplash.com/photo-1434608519344-49d77a699e1d?w=400&q=80",
     difficulty: "Intermediate",
   },
   {
     title: "Sit-up",
     icon: "🤸",
+    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&q=80",
     difficulty: "Beginner",
   },
   {
     title: "Plank",
     icon: "🧱",
-    locked: true,
+    image: "https://images.unsplash.com/photo-1566241142559-40e1dab266c6?w=400&q=80",
     difficulty: "Intermediate",
   },
 ];

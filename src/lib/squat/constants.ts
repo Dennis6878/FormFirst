@@ -10,9 +10,16 @@ export const LANDMARKS = {
   RIGHT_ANKLE: 28,
 } as const;
 
+// --- Visibility ---
+export const MIN_LANDMARK_VISIBILITY = 0.6;
+
 // --- Calibration ---
-export const CALIBRATION_FRAMES = 30;
-export const CALIBRATION_STABILITY_THRESHOLD = 0.015;
+export const CALIBRATION_FRAMES = 45;
+export const CALIBRATION_STABILITY_THRESHOLD = 0.03;
+
+// --- Smoothing ---
+// Exponential moving average alpha (0-1, lower = more smoothing)
+export const SMOOTHING_ALPHA = 0.3;
 
 // --- Depth thresholds ---
 // Ratio of current hip-knee delta to standing hip-knee delta
@@ -21,19 +28,18 @@ export const DEPTH_SUFFICIENT_RATIO = 0.55;
 export const DEPTH_TOO_LOW_RATIO = 0.25;
 
 // --- Rep counting hysteresis ---
-// Ratio thresholds for state transitions (relative to standing delta)
-export const DESCENT_THRESHOLD_RATIO = 0.75;
-export const ASCENT_THRESHOLD_RATIO = 0.85;
-export const MIN_MOVEMENT_THRESHOLD = 0.1;
+// Wide gap between descent and ascent thresholds prevents noise-triggered transitions
+export const DESCENT_THRESHOLD_RATIO = 0.65;
+export const ASCENT_THRESHOLD_RATIO = 0.90;
+// Minimum depth the user must reach (relative to standing) to count as a rep
+export const MIN_MOVEMENT_THRESHOLD = 0.25;
+// Minimum time (ms) between reps to prevent double-counting
+export const MIN_REP_INTERVAL_MS = 800;
 
 // --- Knee valgus ---
-// Ratio: knee-to-knee distance / ankle-to-ankle distance
-// Below this = knees caving in
 export const VALGUS_RATIO_THRESHOLD = 0.7;
 
 // --- Lateral trunk shift ---
-// Max allowed horizontal offset between shoulder midpoint and hip midpoint
-// Normalized coordinates (0-1)
 export const TRUNK_SHIFT_THRESHOLD = 0.04;
 
 // --- Stop recommendation ---
@@ -41,12 +47,12 @@ export const CONSECUTIVE_ERROR_REPS_FOR_STOP = 2;
 
 // --- Skeleton connections for drawing ---
 export const POSE_CONNECTIONS: [number, number][] = [
-  [11, 12], // shoulders
-  [11, 23], // left shoulder to hip
-  [12, 24], // right shoulder to hip
-  [23, 24], // hips
-  [23, 25], // left hip to knee
-  [24, 26], // right hip to knee
-  [25, 27], // left knee to ankle
-  [26, 28], // right knee to ankle
+  [11, 12],
+  [11, 23],
+  [12, 24],
+  [23, 24],
+  [23, 25],
+  [24, 26],
+  [25, 27],
+  [26, 28],
 ];

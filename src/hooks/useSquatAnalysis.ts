@@ -3,7 +3,13 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import type { PoseLandmarkerResult } from "@mediapipe/tasks-vision";
 import { AnalysisStage, type CalibrationData, type RepLog } from "@/lib/squat/types";
-import { LANDMARKS, CALIBRATION_FRAMES, CALIBRATION_STABILITY_THRESHOLD, CONSECUTIVE_ERROR_REPS_FOR_STOP } from "@/lib/squat/constants";
+import {
+  LANDMARKS,
+  CALIBRATION_FRAMES,
+  CALIBRATION_STABILITY_THRESHOLD,
+  CONSECUTIVE_ERROR_REPS_FOR_STOP,
+  MIN_LANDMARK_VISIBILITY,
+} from "@/lib/squat/constants";
 import { createInitialState, transition, type StateMachineState } from "@/lib/squat/stateMachine";
 import { runAllChecks } from "@/lib/squat/formChecks";
 import { useWorkout } from "@/context/WorkoutContext";
@@ -13,6 +19,16 @@ interface Landmark {
   y: number;
   z: number;
   visibility?: number;
+}
+
+function landmarksValid(landmarks: Landmark[]): boolean {
+  const required = [
+    LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP,
+    LANDMARKS.LEFT_KNEE, LANDMARKS.RIGHT_KNEE,
+    LANDMARKS.LEFT_ANKLE, LANDMARKS.RIGHT_ANKLE,
+    LANDMARKS.LEFT_SHOULDER, LANDMARKS.RIGHT_SHOULDER,
+  ];
+  return required.every((idx) => (landmarks[idx]?.visibility ?? 0) >= MIN_LANDMARK_VISIBILITY);
 }
 
 export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
@@ -29,18 +45,37 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
   const calibFramesRef = useRef<Landmark[][]>([]);
   const consecutiveCriticalRef = useRef(0);
   const currentRepErrorsRef = useRef<string[]>([]);
+  const confirmDownRef = useRef(0);
+  const confirmUpRef = useRef(0);
 
   const calibrate = useCallback((landmarks: Landmark[]) => {
+    if (!landmarksValid(landmarks)) {
+      calibFramesRef.current = [];
+      return;
+    }
+
     calibFramesRef.current.push(landmarks);
 
     if (calibFramesRef.current.length < CALIBRATION_FRAMES) return;
 
     const frames = calibFramesRef.current;
-    const hipYs = frames.map((f) => (f[LANDMARKS.LEFT_HIP].y + f[LANDMARKS.RIGHT_HIP].y) / 2);
-    const range = Math.max(...hipYs) - Math.min(...hipYs);
 
-    if (range > CALIBRATION_STABILITY_THRESHOLD) {
-      calibFramesRef.current = calibFramesRef.current.slice(-10);
+    // Check stability: hip Y should not vary much
+    const hipYs = frames.map((f) => (f[LANDMARKS.LEFT_HIP].y + f[LANDMARKS.RIGHT_HIP].y) / 2);
+    const minY = Math.min(...hipYs);
+    const maxY = Math.max(...hipYs);
+
+    if (maxY - minY > CALIBRATION_STABILITY_THRESHOLD) {
+      // Still moving — keep most recent frames and try again
+      calibFramesRef.current = calibFramesRef.current.slice(-15);
+      return;
+    }
+
+    // Also check knee stability
+    const kneeYs = frames.map((f) => (f[LANDMARKS.LEFT_KNEE].y + f[LANDMARKS.RIGHT_KNEE].y) / 2);
+    const kneeRange = Math.max(...kneeYs) - Math.min(...kneeYs);
+    if (kneeRange > CALIBRATION_STABILITY_THRESHOLD) {
+      calibFramesRef.current = calibFramesRef.current.slice(-15);
       return;
     }
 
@@ -54,11 +89,18 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
 
     const hipMidY = (avgLandmarks[LANDMARKS.LEFT_HIP].y + avgLandmarks[LANDMARKS.RIGHT_HIP].y) / 2;
     const kneeMidY = (avgLandmarks[LANDMARKS.LEFT_KNEE].y + avgLandmarks[LANDMARKS.RIGHT_KNEE].y) / 2;
+    const delta = kneeMidY - hipMidY;
+
+    // Sanity check: hip should be above knee (lower Y in normalized coords)
+    if (delta < 0.02) {
+      calibFramesRef.current = [];
+      return;
+    }
 
     const data: CalibrationData = {
       standingHipY: hipMidY,
       standingKneeY: kneeMidY,
-      standingHipKneeDelta: kneeMidY - hipMidY,
+      standingHipKneeDelta: delta,
       standingKneeDistance: Math.abs(avgLandmarks[LANDMARKS.LEFT_KNEE].x - avgLandmarks[LANDMARKS.RIGHT_KNEE].x),
       standingAnkleDistance: Math.abs(avgLandmarks[LANDMARKS.LEFT_ANKLE].x - avgLandmarks[LANDMARKS.RIGHT_ANKLE].x),
       standingShoulderMidX: (avgLandmarks[LANDMARKS.LEFT_SHOULDER].x + avgLandmarks[LANDMARKS.RIGHT_SHOULDER].x) / 2,
@@ -68,6 +110,9 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
     setCalibration(data);
     setCtxCalibration(data);
     setStage(AnalysisStage.ACTIVE);
+    fsmRef.current = createInitialState();
+    confirmDownRef.current = 0;
+    confirmUpRef.current = 0;
   }, [setCtxCalibration]);
 
   useEffect(() => {
@@ -89,8 +134,13 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
 
     if (stage !== AnalysisStage.ACTIVE || !calibration) return;
 
-    const { results, errors, hasCriticalError } = runAllChecks(landmarks, calibration);
-    void results;
+    // Skip frame if key landmarks aren't visible
+    if (!landmarksValid(landmarks)) {
+      setFeedbackMessages([]);
+      return;
+    }
+
+    const { errors } = runAllChecks(landmarks, calibration);
 
     if (errors.length > 0) {
       for (const err of errors) {
@@ -102,7 +152,13 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
 
     setFeedbackMessages(errors);
 
-    const { newState, repCompleted } = transition(fsmRef.current, landmarks, calibration);
+    const { newState, repCompleted } = transition(
+      fsmRef.current,
+      landmarks,
+      calibration,
+      confirmDownRef,
+      confirmUpRef,
+    );
     fsmRef.current = newState;
     setPhase(newState.phase);
 
@@ -127,10 +183,6 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
 
       currentRepErrorsRef.current = [];
     }
-
-    if (hasCriticalError) {
-      // errors are already tracked per-rep via currentRepErrorsRef
-    }
   }, [poseResult, stage, calibration, calibrate, addRep]);
 
   const reset = useCallback(() => {
@@ -138,6 +190,8 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null) {
     calibFramesRef.current = [];
     consecutiveCriticalRef.current = 0;
     currentRepErrorsRef.current = [];
+    confirmDownRef.current = 0;
+    confirmUpRef.current = 0;
     setStage(AnalysisStage.WAITING);
     setCalibration(null);
     setRepCount(0);
