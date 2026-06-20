@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useState } from "react";
 import { useCamera } from "@/hooks/useCamera";
 import { usePoseDetection } from "@/hooks/usePoseDetection";
 import { useSquatAnalysis } from "@/hooks/useSquatAnalysis";
@@ -8,7 +8,7 @@ import { drawPoseOverlay } from "@/components/PoseOverlay";
 import RepCounter from "@/components/RepCounter";
 import AudioToggle from "@/components/AudioToggle";
 import { AnalysisStage } from "@/lib/squat/types";
-import { Camera, Square } from "lucide-react";
+import { Camera, Square, X, AlertOctagon } from "lucide-react";
 
 interface CameraViewProps {
   onEnd: (recordedVideoUrl: string | null) => void;
@@ -19,6 +19,7 @@ export default function CameraView({ onEnd }: CameraViewProps) {
   const compositeCanvasRef = useRef<HTMLCanvasElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const [stopDismissed, setStopDismissed] = useState(false);
   const { videoRef, isReady, error, start, stop } = useCamera();
   const { result, isLoading } = usePoseDetection(videoRef, isReady);
   const { stage, repCount, feedbackMessages, shouldStop, phase, hasLiveError } = useSquatAnalysis(result);
@@ -28,7 +29,11 @@ export default function CameraView({ onEnd }: CameraViewProps) {
     return () => stop();
   }, [start, stop]);
 
-  // Start recording once calibration is done and analysis is active
+  // Reset dismissal if shouldStop goes false then true again
+  useEffect(() => {
+    if (shouldStop) setStopDismissed(false);
+  }, [shouldStop]);
+
   useEffect(() => {
     if (stage !== AnalysisStage.ACTIVE) return;
     const composite = compositeCanvasRef.current;
@@ -43,7 +48,7 @@ export default function CameraView({ onEnd }: CameraViewProps) {
       recorder.start(500);
       mediaRecorderRef.current = recorder;
     } catch {
-      // Recording not supported — continue without it
+      // fallback
     }
   }, [stage]);
 
@@ -76,7 +81,6 @@ export default function CameraView({ onEnd }: CameraViewProps) {
       ctx.clearRect(0, 0, vw, vh);
     }
 
-    // Draw composite: mirrored video + overlay (for recording)
     compCtx.save();
     compCtx.translate(vw, 0);
     compCtx.scale(-1, 1);
@@ -88,7 +92,6 @@ export default function CameraView({ onEnd }: CameraViewProps) {
     compCtx.drawImage(canvas, 0, 0, vw, vh);
     compCtx.restore();
 
-    // Draw feedback text onto composite
     if (feedbackMessages.length > 0) {
       compCtx.font = "bold 20px sans-serif";
       compCtx.textAlign = "center";
@@ -102,7 +105,6 @@ export default function CameraView({ onEnd }: CameraViewProps) {
       });
     }
 
-    // Draw rep count onto composite
     if (stage === AnalysisStage.ACTIVE) {
       compCtx.font = "bold 28px sans-serif";
       compCtx.textAlign = "left";
@@ -160,9 +162,9 @@ export default function CameraView({ onEnd }: CameraViewProps) {
         ref={canvasRef}
         className="absolute inset-0 w-full h-full object-cover -scale-x-100"
       />
-      {/* Hidden composite canvas for recording */}
       <canvas ref={compositeCanvasRef} className="hidden" />
 
+      {/* Loading */}
       {(isLoading || !isReady) && (
         <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
           <div className="text-center">
@@ -173,6 +175,7 @@ export default function CameraView({ onEnd }: CameraViewProps) {
         </div>
       )}
 
+      {/* Calibrating */}
       {stage === AnalysisStage.CALIBRATING && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="bg-black/70 backdrop-blur-xl rounded-2xl px-8 py-7 text-center mx-8">
@@ -183,22 +186,44 @@ export default function CameraView({ onEnd }: CameraViewProps) {
         </div>
       )}
 
+      {/* Active overlay */}
       {stage === AnalysisStage.ACTIVE && (
         <RepCounter repCount={repCount} feedbackMessages={feedbackMessages} phase={phase} hasError={hasLiveError} />
       )}
 
-      {shouldStop && (
-        <div className="absolute inset-x-0 top-1/3 flex justify-center px-6">
-          <div className="bg-red-500 rounded-2xl px-6 py-4 text-center shadow-2xl shadow-red-500/40 animate-bounce">
-            <p className="text-white font-bold text-[15px]">Form Breaking Down</p>
-            <p className="text-white/70 text-[12px] mt-0.5">Consider stopping this set</p>
+      {/* Stop warning — dismissible */}
+      {shouldStop && !stopDismissed && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-20">
+          <div className="bg-zinc-900 rounded-3xl mx-6 p-6 text-center shadow-2xl border border-red-500/30 max-w-[320px]">
+            <div className="w-14 h-14 rounded-full bg-red-500/15 flex items-center justify-center mx-auto mb-4">
+              <AlertOctagon className="w-7 h-7 text-red-500" />
+            </div>
+            <h3 className="text-white font-bold text-[18px] mb-1.5">Form Breaking Down</h3>
+            <p className="text-zinc-400 text-[13px] leading-relaxed mb-5">
+              Multiple reps with critical form errors detected. Continuing may increase injury risk.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={handleEnd}
+                className="w-full h-11 rounded-xl bg-red-500 text-white font-semibold text-[14px] active:scale-[0.98] transition-transform"
+              >
+                End Workout
+              </button>
+              <button
+                onClick={() => setStopDismissed(true)}
+                className="w-full h-11 rounded-xl bg-white/10 text-white/70 font-medium text-[13px] active:scale-[0.98] transition-transform"
+              >
+                Continue Anyway
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      <div className="absolute bottom-0 left-0 right-0 pb-10 pt-20 bg-gradient-to-t from-black/70 to-transparent">
+      {/* Bottom controls */}
+      <div className="absolute bottom-0 left-0 right-0 pb-10 pt-20 bg-gradient-to-t from-black/70 to-transparent z-10">
         <div className="flex items-center justify-center gap-4 px-6">
-          <AudioToggle feedbackMessages={feedbackMessages} />
+          <AudioToggle feedbackMessages={feedbackMessages} repCount={repCount} />
           <button
             onClick={handleEnd}
             className="h-11 px-7 rounded-full bg-white text-zinc-900 font-semibold text-[13px] flex items-center gap-2 shadow-lg active:scale-95 transition-transform"

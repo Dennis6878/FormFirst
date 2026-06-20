@@ -1,40 +1,55 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Volume2, VolumeX } from "lucide-react";
+
+const GOOD_PHRASES = ["Good", "Nice", "Keep going", "Perfect", "Great form", "Solid"];
 
 interface AudioToggleProps {
   feedbackMessages: string[];
+  repCount: number;
 }
 
-export default function AudioToggle({ feedbackMessages }: AudioToggleProps) {
+export default function AudioToggle({ feedbackMessages, repCount }: AudioToggleProps) {
   const [enabled, setEnabled] = useState(false);
-  const lastSpokenRef = useRef<string>("");
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const lastRepSpokenRef = useRef(0);
+  const phraseIndexRef = useRef(0);
 
+  const speak = useCallback((text: string) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.1;
+    utterance.volume = 0.9;
+    utterance.pitch = 1.0;
+    window.speechSynthesis.speak(utterance);
+  }, []);
+
+  // Speak feedback after each rep
+  useEffect(() => {
+    if (!enabled || repCount === 0 || repCount === lastRepSpokenRef.current) return;
+    lastRepSpokenRef.current = repCount;
+
+    const errorMessages = feedbackMessages.filter((m) => m !== "Good rep!");
+    if (errorMessages.length > 0) {
+      speak(errorMessages[0]);
+    } else {
+      const phrase = GOOD_PHRASES[phraseIndexRef.current % GOOD_PHRASES.length];
+      phraseIndexRef.current++;
+      speak(phrase);
+    }
+  }, [enabled, repCount, feedbackMessages, speak]);
+
+  // Speak live critical errors immediately
   useEffect(() => {
     if (!enabled || feedbackMessages.length === 0) return;
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-
-    const message = feedbackMessages[0];
-    if (message === lastSpokenRef.current) return;
-
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(message);
-      utterance.rate = 1.2;
-      utterance.volume = 0.8;
-      window.speechSynthesis.speak(utterance);
-      lastSpokenRef.current = message;
-    }, 300);
-  }, [enabled, feedbackMessages]);
-
-  useEffect(() => {
-    if (feedbackMessages.length === 0) {
-      lastSpokenRef.current = "";
+    const criticalErrors = feedbackMessages.filter(
+      (m) => m === "Knees caving in" || m === "Shift weight to center"
+    );
+    if (criticalErrors.length > 0) {
+      speak(criticalErrors[0]);
     }
-  }, [feedbackMessages]);
+  }, [enabled, feedbackMessages, speak]);
 
   return (
     <button
@@ -45,7 +60,7 @@ export default function AudioToggle({ feedbackMessages }: AudioToggleProps) {
           : "bg-white/15 backdrop-blur-md text-white/60 hover:text-white/80"
       }`}
     >
-      {enabled ? <Volume2 className="w-4.5 h-4.5" /> : <VolumeX className="w-4.5 h-4.5" />}
+      {enabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
     </button>
   );
 }
