@@ -38,8 +38,10 @@ export default function AudioToggle({ feedbackMessages }: AudioToggleProps) {
   return (
     <button
       onClick={() => setEnabled(!enabled)}
-      className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-        enabled ? "bg-primary text-white" : "bg-black/50 text-white/60"
+      className={`w-[48px] h-[48px] rounded-full flex items-center justify-center transition-all shadow-lg ${
+        enabled
+          ? "bg-white text-primary"
+          : "bg-white/20 backdrop-blur-md text-white/70"
       }`}
     >
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

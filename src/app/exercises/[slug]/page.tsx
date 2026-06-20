@@ -50,31 +50,32 @@ export default function ExerciseDetailPage() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Scrollable content */}
+    <div className="flex flex-col h-full bg-background">
+      {/* Scrollable */}
       <div className="flex-1 overflow-y-auto">
-        <div className="px-5 pt-12 pb-2">
-          <Link href="/exercises" className="inline-flex items-center gap-1 text-sm text-muted mb-4 hover:text-foreground transition-colors">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        {/* Header */}
+        <div className="px-5 pt-14 pb-3">
+          <Link href="/exercises" className="inline-flex items-center gap-1.5 text-[13px] text-muted mb-5 hover:text-foreground transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
             Back
           </Link>
 
-          <div className="flex items-center gap-4 mb-5">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/10 to-primary-light/10 flex items-center justify-center">
               <span className="text-2xl">{exercise.icon}</span>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">{exercise.title}</h1>
-              <span className="text-xs font-medium text-muted bg-card-border px-2 py-0.5 rounded-full">Beginner</span>
+              <h1 className="text-[22px] font-bold text-foreground tracking-tight">{exercise.title}</h1>
+              <span className="text-[11px] font-medium text-primary bg-primary/8 px-2 py-0.5 rounded-lg">Beginner</span>
             </div>
           </div>
         </div>
 
         {/* Video */}
-        <div className="px-5 mb-5">
-          <div className="rounded-2xl overflow-hidden border border-card-border aspect-video">
+        <div className="px-5 mb-6">
+          <div className="rounded-2xl overflow-hidden shadow-sm shadow-black/[0.06] aspect-video">
             <iframe
               className="w-full h-full"
               src={`https://www.youtube.com/embed/${exercise.videoId}`}
@@ -86,25 +87,23 @@ export default function ExerciseDetailPage() {
         </div>
 
         {/* Description */}
-        <div className="px-5 pb-6">
-          <h2 className="text-sm font-semibold text-foreground mb-3">How to Perform</h2>
-          <div className="text-sm text-muted leading-relaxed whitespace-pre-line">
+        <div className="px-5 pb-8">
+          <h2 className="text-[13px] font-semibold text-foreground uppercase tracking-wider mb-4">How to Perform</h2>
+          <div className="text-[14px] text-slate-500 leading-[1.75] whitespace-pre-line">
             {exercise.description}
           </div>
         </div>
       </div>
 
-      {/* Sticky bottom: last session + start button */}
-      <div className="flex-shrink-0 border-t border-card-border bg-background px-5 py-4">
+      {/* Sticky bottom */}
+      <div className="flex-shrink-0 bg-white/80 backdrop-blur-xl border-t border-slate-100 px-5 py-4">
         {lastSession && (
-          <div className="rounded-xl bg-card border border-card-border p-3 mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-muted uppercase tracking-wider">Last Session</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-bold text-foreground">{lastSession.totalReps} reps</span>
+          <div className="rounded-2xl bg-surface p-3.5 mb-3 flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-muted uppercase tracking-wider">Last Session</span>
+            <div className="flex items-center gap-2.5">
+              <span className="text-[13px] font-bold text-foreground">{lastSession.totalReps} reps</span>
               {lastSession.mostCommonMistake && (
-                <span className="text-[10px] text-warning font-medium bg-warning/10 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] text-warning font-medium bg-warning/10 px-2 py-0.5 rounded-lg">
                   {lastSession.mostCommonMistake}
                 </span>
               )}
@@ -113,10 +112,10 @@ export default function ExerciseDetailPage() {
         )}
         <button
           onClick={handleStart}
-          className="w-full h-14 rounded-2xl bg-primary text-white font-semibold text-base hover:bg-primary-light transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
+          className="w-full h-[54px] rounded-2xl bg-gradient-to-r from-primary to-primary-light text-white font-semibold text-[15px] shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5.14v14l11-7-11-7z" />
           </svg>
           Start Analysis
         </button>

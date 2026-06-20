@@ -73,10 +73,10 @@ export default function ExercisesPage() {
     : BASE_EXERCISES;
 
   return (
-    <div className="flex flex-col h-full px-5 pt-14 pb-4">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Exercises</h1>
-        <p className="text-sm text-muted mt-1">Choose an exercise to analyze your form</p>
+    <div className="flex flex-col h-full px-5 pt-16 pb-4">
+      <div className="mb-7">
+        <h1 className="text-[26px] font-bold text-foreground tracking-tight">Exercises</h1>
+        <p className="text-[14px] text-muted mt-1">Choose an exercise to analyze your form</p>
       </div>
       <div className="grid grid-cols-2 gap-3">
         {exercises.map((ex) => (

@@ -19,27 +19,27 @@ export default function ExerciseCard({
   difficulty,
   image,
 }: ExerciseCardProps) {
-  const height = fullWidth ? "h-36" : "h-40";
+  const height = fullWidth ? "h-[140px]" : "h-[160px]";
 
   const card = (
     <div
-      className={`relative rounded-2xl overflow-hidden transition-all active:scale-[0.97] ${
+      className={`relative rounded-[20px] overflow-hidden transition-all duration-200 active:scale-[0.97] ${
         fullWidth ? "col-span-2" : ""
-      } ${height} cursor-pointer group`}
+      } ${height} cursor-pointer group shadow-sm shadow-black/[0.04]`}
     >
       {image && (
         <div
-          className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-500 ease-out group-hover:scale-110"
           style={{ backgroundImage: `url(${image})` }}
         />
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
 
       <div className="relative h-full flex flex-col justify-end p-4">
-        <span className="text-2xl mb-1 drop-shadow-lg">{icon}</span>
-        <h3 className="font-bold text-white text-base drop-shadow-lg">{title}</h3>
+        <span className="text-[22px] mb-0.5 drop-shadow-md">{icon}</span>
+        <h3 className="font-semibold text-white text-[15px] tracking-tight drop-shadow-md">{title}</h3>
         {difficulty && (
-          <span className="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white/80 backdrop-blur-sm w-fit">
+          <span className="inline-block mt-1.5 text-[10px] font-medium px-2.5 py-[3px] rounded-full bg-white/15 text-white/90 backdrop-blur-md w-fit tracking-wide">
             {difficulty}
           </span>
         )}

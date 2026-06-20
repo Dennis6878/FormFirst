@@ -44,7 +44,11 @@ export default function SummaryPage() {
   if (totalReps === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full px-8 text-center">
-        <p className="text-muted text-base mb-4">No reps recorded this session.</p>
+        <div className="w-16 h-16 rounded-full bg-surface flex items-center justify-center mb-4">
+          <span className="text-3xl">🏋️</span>
+        </div>
+        <p className="text-foreground font-semibold mb-1">No reps recorded</p>
+        <p className="text-muted text-sm mb-6">Try again and make sure the camera can see your full body.</p>
         <button onClick={handleDone} className="text-primary font-semibold text-sm">
           Back to Exercises
         </button>
@@ -52,41 +56,51 @@ export default function SummaryPage() {
     );
   }
 
-  return (
-    <div className="flex flex-col h-full px-5 pt-14 pb-6">
-      <h1 className="text-2xl font-bold text-foreground mb-1">Workout Summary</h1>
-      <p className="text-sm text-muted mb-6 capitalize">{currentExercise ?? "Exercise"} Session</p>
+  const score = Math.round((goodReps / totalReps) * 100);
 
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-card border border-card-border rounded-2xl p-4 text-center">
-          <div className="text-2xl font-bold text-foreground">{totalReps}</div>
-          <div className="text-[10px] text-muted uppercase tracking-wider mt-0.5">Total Reps</div>
+  return (
+    <div className="flex flex-col h-full px-5 pt-16 pb-6 bg-background">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/10 to-primary-light/10 flex items-center justify-center mx-auto mb-4">
+          <span className="text-4xl font-bold text-primary">{score}%</span>
         </div>
-        <div className="bg-card border border-card-border rounded-2xl p-4 text-center">
-          <div className="text-2xl font-bold text-success">{goodReps}</div>
-          <div className="text-[10px] text-muted uppercase tracking-wider mt-0.5">Good Form</div>
+        <h1 className="text-[22px] font-bold text-foreground tracking-tight">Workout Complete</h1>
+        <p className="text-[13px] text-muted mt-1 capitalize">{currentExercise ?? "Exercise"} Session</p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-2.5 mb-6">
+        <div className="bg-surface rounded-2xl p-3.5 text-center">
+          <div className="text-[22px] font-bold text-foreground">{totalReps}</div>
+          <div className="text-[10px] text-muted uppercase tracking-wider mt-0.5 font-medium">Total</div>
         </div>
-        <div className="bg-card border border-card-border rounded-2xl p-4 text-center">
-          <div className="text-2xl font-bold text-warning">{totalReps - goodReps}</div>
-          <div className="text-[10px] text-muted uppercase tracking-wider mt-0.5">Needs Work</div>
+        <div className="bg-surface rounded-2xl p-3.5 text-center">
+          <div className="text-[22px] font-bold text-success">{goodReps}</div>
+          <div className="text-[10px] text-muted uppercase tracking-wider mt-0.5 font-medium">Good</div>
+        </div>
+        <div className="bg-surface rounded-2xl p-3.5 text-center">
+          <div className="text-[22px] font-bold text-warning">{totalReps - goodReps}</div>
+          <div className="text-[10px] text-muted uppercase tracking-wider mt-0.5 font-medium">Fix</div>
         </div>
       </div>
 
+      {/* Rep breakdown */}
       <div className="mb-6">
-        <h2 className="text-sm font-semibold text-foreground mb-3">Rep Breakdown</h2>
-        <div className="bg-card border border-card-border rounded-2xl p-4 max-h-44 overflow-y-auto">
-          <div className="space-y-2">
+        <h2 className="text-[12px] font-semibold text-foreground uppercase tracking-wider mb-3">Rep Breakdown</h2>
+        <div className="bg-surface rounded-2xl p-4 max-h-40 overflow-y-auto">
+          <div className="space-y-2.5">
             {repLogs.map((log) => (
               <div key={log.repNumber} className="flex items-center gap-3">
-                <span className="text-xs text-muted w-12 flex-shrink-0">Rep {log.repNumber}</span>
+                <span className="text-[12px] text-muted w-10 flex-shrink-0 font-medium">#{log.repNumber}</span>
                 {log.errors.length === 0 ? (
-                  <span className="text-xs font-medium text-success bg-success/10 px-2 py-0.5 rounded-full">
+                  <span className="text-[11px] font-medium text-success bg-success/8 px-2.5 py-1 rounded-lg">
                     Good form
                   </span>
                 ) : (
                   <div className="flex flex-wrap gap-1">
                     {log.errors.map((err) => (
-                      <span key={err} className="text-xs font-medium text-warning bg-warning/10 px-2 py-0.5 rounded-full">
+                      <span key={err} className="text-[11px] font-medium text-warning bg-warning/8 px-2.5 py-1 rounded-lg">
                         {err}
                       </span>
                     ))}
@@ -98,34 +112,38 @@ export default function SummaryPage() {
         </div>
       </div>
 
+      {/* AI Feedback */}
       {mostCommonMistake && (
         <div className="mb-6">
-          <h2 className="text-sm font-semibold text-foreground mb-3">AI Form Coaching</h2>
-          <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-              </svg>
-              <span className="text-xs font-semibold text-primary uppercase tracking-wider">
-                Most common: {mostCommonMistake}
+          <h2 className="text-[12px] font-semibold text-foreground uppercase tracking-wider mb-3">AI Coaching</h2>
+          <div className="bg-gradient-to-br from-primary/[0.04] to-primary-light/[0.06] rounded-2xl p-4 border border-primary/10">
+            <div className="flex items-center gap-2 mb-2.5">
+              <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                <svg className="w-3.5 h-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                </svg>
+              </div>
+              <span className="text-[12px] font-semibold text-primary">
+                Focus: {mostCommonMistake}
               </span>
             </div>
             {isLoadingFeedback ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs text-muted">Generating feedback...</span>
+                <span className="text-[12px] text-muted">Generating feedback...</span>
               </div>
             ) : (
-              <p className="text-sm text-foreground leading-relaxed">{aiFeedback}</p>
+              <p className="text-[13px] text-slate-600 leading-relaxed">{aiFeedback}</p>
             )}
           </div>
         </div>
       )}
 
+      {/* Done button */}
       <div className="mt-auto">
         <button
           onClick={handleDone}
-          className="w-full h-14 rounded-2xl bg-primary text-white font-semibold text-base hover:bg-primary-light transition-colors active:scale-[0.98]"
+          className="w-full h-[54px] rounded-2xl bg-gradient-to-r from-primary to-primary-light text-white font-semibold text-[15px] shadow-lg shadow-primary/25 transition-all active:scale-[0.98]"
         >
           Done
         </button>
