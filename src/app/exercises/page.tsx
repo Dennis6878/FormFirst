@@ -9,33 +9,33 @@ const BASE_EXERCISES = [
   {
     title: "Mobility Analysis",
     fullWidth: true,
-    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80",
+    image: "/Mobility Analysis.jpeg",
     difficulty: "Full Body",
   },
   {
     title: "Squat",
     href: "/exercises/squat",
-    image: "https://images.unsplash.com/photo-1567598508481-65985588e295?w=400&q=80",
+    image: "/Squat.jpeg",
     difficulty: "Beginner",
   },
   {
     title: "Push-up",
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&q=80",
+    image: "/Pushup.jpeg",
     difficulty: "Beginner",
   },
   {
     title: "Lunge",
-    image: "https://images.unsplash.com/photo-1434608519344-49d77a699e1d?w=400&q=80",
+    image: "/Lunge.jpeg",
     difficulty: "Intermediate",
   },
   {
     title: "Sit-up",
-    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&q=80",
+    image: "/Sit-Up.jpeg",
     difficulty: "Beginner",
   },
   {
     title: "Plank",
-    image: "https://images.unsplash.com/photo-1599058917212-d750089bc07e?w=400&q=80",
+    image: "/Plank.jpeg",
     difficulty: "Intermediate",
   },
 ];
