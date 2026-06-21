@@ -132,7 +132,7 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
       let error: string | null = null;
 
       if (hadKneesWideRef.current) {
-        error = "Knees too wide";
+        error = "Knees instable";
       } else if (minDepth < DEPTH_GOOD_MIN) {
         error = "Too deep";
       } else if (minDepth > DEPTH_GOOD_MAX) {
@@ -150,7 +150,7 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
         setFeedbackMessages([]);
       }, 2000);
 
-      if (error === "Knees too wide") {
+      if (error === "Knees instable") {
         consecutiveCriticalRef.current += 1;
       } else {
         consecutiveCriticalRef.current = 0;
