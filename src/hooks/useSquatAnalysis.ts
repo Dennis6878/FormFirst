@@ -77,7 +77,7 @@ export function useSquatAnalysis(poseResult: PoseLandmarkerResult | null, target
     setCalibration(data);
     setCtxCalibration(data);
     setStage(AnalysisStage.COUNTDOWN);
-    setCountdown(10);
+    setCountdown(3);
   }, [setCtxCalibration]);
 
   useEffect(() => {
