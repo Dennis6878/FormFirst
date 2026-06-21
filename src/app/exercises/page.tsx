@@ -9,7 +9,7 @@ const BASE_EXERCISES = [
   {
     title: "Mobility Analysis",
     fullWidth: true,
-    image: "/Mobility Analysis.jpeg",
+    image: "/Mobility-Analysis.jpeg",
     difficulty: "Full Body",
   },
   {
